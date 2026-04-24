@@ -1,0 +1,21 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+    {
+      "type": "node",
+      "request": "attach", // Quan trọng: là attach
+      "name": "Attach NestJS WS",
+      "address": "localhost",
+      "port": 9229,        // Port mà ứng dụng đang lắng nghe debugger
+      "restart": true,     // Tự động kết nối lại nếu tiến trình khởi động lại (do --watch)
+      "sourceMaps": true,  // Để map từ JS đã biên dịch về TS gốc
+      "outFiles": ["${workspaceFolder}\\dist\\**\\*.js"], // Đường dẫn tới file JS đã biên dịch
+      "localRoot": "${workspaceFolder}",
+      "remoteRoot": "${workspaceFolder}", // Nếu chạy trên máy cục bộ
+    }
+    // Các cấu hình khác có thể ở đây
+  ]
+}
