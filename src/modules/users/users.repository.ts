@@ -47,4 +47,12 @@ export class UsersRepository {
   async delete(id: string): Promise<User | null> {
     return this.userModel.findByIdAndDelete(id).exec();
   }
+
+  async findByEmailForAuth(email: string): Promise<User | null> {
+    return (await this.userModel
+      .findOne({ email })
+      .select('+password') // Ép Mongoose phải lấy field password ra
+      .lean()
+      .exec()) as User | null;
+  }
 }

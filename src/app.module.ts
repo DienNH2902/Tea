@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from './modules/users/users.module';
 import { TeaModule } from './modules/tea/tea.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { TeaModule } from './modules/tea/tea.module';
       inject: [ConfigService],
     }),
     TeaModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
