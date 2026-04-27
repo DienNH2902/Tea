@@ -21,8 +21,8 @@ export class ResponseUserDto {
   age: number;
 
   @Expose()
-  @ApiProperty({ example: true })
-  gender: boolean;
+  @ApiProperty({ example: 1 })
+  gender: number;
 
   @Expose()
   @ApiProperty({ example: 0 })

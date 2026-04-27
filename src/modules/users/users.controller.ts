@@ -13,6 +13,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ResponseUserDto } from './dto/response-user.dto';
+import { GenderEnum } from 'src/constants/genderEnum.enum';
 
 @ApiTags('users')
 @Controller('users')
@@ -39,6 +40,16 @@ export class UsersController {
     @Query('name') name: string,
   ): Promise<ResponseUserDto[] | null> {
     const user = await this.usersService.findUserByName(name);
+    return user ? user : null;
+  }
+
+  @Get('byGender')
+  @ApiQuery({ name: 'Gender', required: true, enum: GenderEnum })
+  @ApiOperation({ summary: 'Get all users by gender' })
+  async findByGender(
+    @Query('Gender') gender: GenderEnum,
+  ): Promise<ResponseUserDto[] | null> {
+    const user = await this.usersService.findByGender(gender);
     return user ? user : null;
   }
 

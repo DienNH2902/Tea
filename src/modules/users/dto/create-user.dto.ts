@@ -7,7 +7,9 @@ import {
   IsNumber,
   IsBoolean,
   Min,
+  IsEnum,
 } from 'class-validator';
+import { GenderEnum } from 'src/constants/genderEnum.enum';
 
 export class CreateUserDto {
   @ApiProperty({ example: 'Nguyễn Văn A', required: true, minLength: 3 })
@@ -32,10 +34,11 @@ export class CreateUserDto {
   @Min(0, { message: 'Tuổi không hợp lệ' })
   age: number;
 
-  @ApiProperty({ example: true, required: true })
-  @IsBoolean({ message: 'Giới tính phải là true/false' })
+  @ApiProperty({ example: 1, required: true })
+  @IsEnum(GenderEnum, { message: 'Giới tính không hợp lệ' })
+  @IsNumber({}, { message: 'Giới tính phải là 0/1' })
   @IsNotEmpty({ message: 'Giới tính không được để trống' })
-  gender: boolean;
+  gender: GenderEnum;
 
   //   @ApiProperty({ example: 0, required: true })
   //   @IsNumber({}, { message: 'Role phải là số' })

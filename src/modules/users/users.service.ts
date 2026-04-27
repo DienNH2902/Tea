@@ -9,7 +9,7 @@ import { HashUtil } from 'src/utils/helpers';
 import { plainToInstance } from 'class-transformer';
 import { ResponseUserDto } from './dto/response-user.dto';
 import { UsersRepository } from './users.repository';
-
+import { GenderEnum } from 'src/constants/genderEnum.enum';
 @Injectable()
 export class UsersService {
   constructor(private readonly usersRepository: UsersRepository) {}
@@ -51,6 +51,14 @@ export class UsersService {
     const users = await this.usersRepository.findUserByName(name);
     if (!users || users.length === 0) {
       throw new NotFoundException(`No users found with name: ${name}`);
+    }
+    return users.map((user) => this.toResponseDto(user));
+  }
+
+  async findByGender(gender: GenderEnum): Promise<ResponseUserDto[]> {
+    const users = await this.usersRepository.findByGender(gender);
+    if (!users || users.length === 0) {
+      throw new NotFoundException(`No users found with gender: ${gender}`);
     }
     return users.map((user) => this.toResponseDto(user));
   }

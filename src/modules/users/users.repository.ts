@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, QueryFilter } from 'mongoose';
 import { UpdateQuery } from 'mongoose';
 import { User } from './schemas/user.schema';
+import { GenderEnum } from 'src/constants/genderEnum.enum';
 
 @Injectable()
 export class UsersRepository {
@@ -32,6 +33,10 @@ export class UsersRepository {
       })
       .lean()
       .exec();
+  }
+
+  async findByGender(gender: GenderEnum): Promise<User[]> {
+    return await this.userModel.find({ gender: gender }).lean().exec();
   }
 
   async findByIdAndUpdate(

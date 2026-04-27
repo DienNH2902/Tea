@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+import { GenderEnum } from 'src/constants/genderEnum.enum';
 
 export type UserDocument = HydratedDocument<User>;
 
@@ -23,8 +24,16 @@ export class User {
   @Prop({ type: Number })
   age: number;
 
-  @Prop({ type: Boolean })
-  gender: boolean;
+  // @Prop({ type: Boolean })
+  // gender: boolean;
+
+  @Prop({
+    type: Number,
+    enum: GenderEnum,
+    default: GenderEnum.Male,
+    required: true,
+  })
+  gender: GenderEnum;
 
   @Prop({ type: Number, default: 0 })
   role: number;
