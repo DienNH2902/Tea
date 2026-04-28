@@ -7,6 +7,7 @@ import * as bcrypt from 'bcrypt';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
+import { ResponseUserDto } from '../users/dto/response-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -33,6 +34,7 @@ export class AuthService {
     // });
     return await this.usersService.create({
       ...registerDto,
+      role: 1,
       isRegular: false, // Chủ động gán giá trị mặc định cho người mới đăng ký
     } as CreateUserDto);
   }
@@ -52,20 +54,28 @@ export class AuthService {
 
     const payload = {
       sub: user._id.toString(), //sub là Subject, quy chuẩn quốc tế của JWT, thường dùng để lưu id người dùng
+      id: user._id,
+      name: user.name,
       email: user.email,
       role: user.role,
+      age: user.age,
+      gender: user.gender,
+      address: user.address,
+      isRegular: user.isRegular,
     };
 
     return {
       access_token: await this.jwtService.signAsync(payload),
+      user: new ResponseUserDto(user),
+      // user: {
+      //   _id: user._id,
+      //   name: user.name,
+      //   email: user.email,
+      //   role: user.role,
+      // },
       refresh_token: await this.jwtService.signAsync(payload, {
         expiresIn: '7d',
       }),
-      user: {
-        name: user.name,
-        email: user.email,
-        // isRegular: user.isRegular,
-      },
     };
   }
 }

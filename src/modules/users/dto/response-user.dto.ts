@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Exclude, Expose, Transform } from 'class-transformer';
+import { Exclude, Expose, plainToInstance, Transform } from 'class-transformer';
 import { User } from '../schemas/user.schema';
 
 export class ResponseUserDto {
@@ -42,7 +42,14 @@ export class ResponseUserDto {
   @Exclude()
   __v: number;
 
+  // constructor(partial: Partial<User>) {
+  //   Object.assign(this, partial);
+  // }
   constructor(partial: Partial<User>) {
-    Object.assign(this, partial);
+    // Thay vì Object.assign, hãy dùng plainToInstance
+    // Nó sẽ đọc các Decorator @Exclude, @Expose để lọc dữ liệu
+    return plainToInstance(ResponseUserDto, partial, {
+      excludeExtraneousValues: true, // Chỉ lấy những trường có @Expose()
+    });
   }
 }

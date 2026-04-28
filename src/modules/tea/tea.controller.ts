@@ -7,25 +7,39 @@ import {
   Param,
   Delete,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { TeaService } from './tea.service';
 import { CreateTeaDto } from './dto/create-tea.dto';
 import { UpdateTeaDto } from './dto/update-tea.dto';
-import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ResponseTeaDto } from './dto/response-tea.dto';
 import { TeaType } from 'src/constants/tea-type.enum';
 import {
   LabelToValue,
   SortTeaByPrice,
 } from 'src/constants/teaSortByPrice-type.enum';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { RoleEnum } from 'src/constants/roleEnum.enum';
 
 @ApiTags('tea')
+@ApiBearerAuth()
 @Controller('tea')
 export class TeaController {
   constructor(private readonly teaService: TeaService) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new tea product' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.ADMIN, RoleEnum.MANAGER)
   @ApiBody({ type: CreateTeaDto })
   create(@Body() createTeaDto: CreateTeaDto): Promise<ResponseTeaDto> {
     return this.teaService.create(createTeaDto);
@@ -91,6 +105,8 @@ export class TeaController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update tea by ID' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.ADMIN, RoleEnum.MANAGER)
   @ApiBody({ type: UpdateTeaDto })
   update(
     @Param('id') id: string,
@@ -101,6 +117,8 @@ export class TeaController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete tea by ID' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.ADMIN)
   remove(@Param('id') id: string): Promise<void> {
     return this.teaService.remove(id);
   }

@@ -38,7 +38,7 @@ export class User {
   @Prop({ type: Number, default: 0 })
   role: number;
 
-  @Prop({ type: String })
+  @Prop({ type: String, required: true })
   address: string;
 
   @Prop({ type: Boolean, default: false })
