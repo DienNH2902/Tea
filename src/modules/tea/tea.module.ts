@@ -9,5 +9,6 @@ import { TeaRepository } from './tea.repository';
   imports: [MongooseModule.forFeature([{ name: Tea.name, schema: TeaSchema }])],
   controllers: [TeaController],
   providers: [TeaService, TeaRepository],
+  exports: [TeaRepository, TeaService, MongooseModule],
 })
 export class TeaModule {}

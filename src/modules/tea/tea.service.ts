@@ -87,6 +87,31 @@ export class TeaService {
     return this.toResponseDto(updatedTea);
   }
 
+  async updateStock(id: string, quantity: number): Promise<ResponseTeaDto> {
+    // 1. Thực hiện cập nhật stock
+    const updatedTea = await this.teaRepository.updateStock(id, quantity);
+
+    if (!updatedTea) {
+      throw new NotFoundException(`Tea with ID ${id} not found`);
+    }
+
+    // 2. Logic bổ sung: Nếu hết hàng thì tự động set isAvailable = false
+    // Hoặc nếu nhập thêm hàng (quantity > 0) thì set isAvailable = true
+    if (updatedTea.stock <= 0) {
+      await this.teaRepository.findByIdAndUpdate(id, {
+        isAvailable: false,
+        stock: 0,
+      });
+      updatedTea.isAvailable = false;
+      updatedTea.stock = 0;
+    } else if (updatedTea.stock > 0 && !updatedTea.isAvailable) {
+      await this.teaRepository.findByIdAndUpdate(id, { isAvailable: true });
+      updatedTea.isAvailable = true;
+    }
+
+    return this.toResponseDto(updatedTea);
+  }
+
   async remove(id: string): Promise<void> {
     const deleted = await this.teaRepository.delete(id);
     if (!deleted) {

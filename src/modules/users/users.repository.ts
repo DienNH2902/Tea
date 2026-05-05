@@ -44,7 +44,7 @@ export class UsersRepository {
     updateData: UpdateQuery<User>,
   ): Promise<User | null> {
     return (await this.userModel
-      .findByIdAndUpdate(id, updateData, { new: true })
+      .findByIdAndUpdate(id, updateData, { returnDocument: 'after' })
       .lean()
       .exec()) as unknown as User | null;
   }

@@ -59,6 +59,18 @@ export class TeaRepository {
       .exec()) as unknown as Tea | null;
   }
 
+  async updateStock(id: string, quantity: number): Promise<Tea | null> {
+    return this.teaModel
+      .findByIdAndUpdate(
+        id,
+        {
+          $inc: { stock: quantity }, // Sử dụng $inc để cộng/trừ trực tiếp trong DB
+        },
+        { new: true }, // Trả về data sau khi đã cập nhật
+      )
+      .exec();
+  }
+
   async delete(id: string): Promise<Tea | null> {
     return this.teaModel.findByIdAndDelete(id).exec();
   }
