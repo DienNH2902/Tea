@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, UpdateQuery } from 'mongoose';
 import { Order, OrderDocument } from './schemas/order.schema';
 import { OrderStatus } from 'src/constants/statusEnum.enum';
 
@@ -18,6 +18,7 @@ export class OrdersRepository {
   async findAllByUserId(userId: string): Promise<Order[]> {
     return this.orderModel
       .find({ userId: new Types.ObjectId(userId) })
+      .populate('userId')
       .sort({ createdAt: -1 })
       .lean()
       .exec();
@@ -39,5 +40,19 @@ export class OrdersRepository {
       )
       .lean()
       .exec();
+  }
+
+  async findByIdAndUpdate(
+    id: string,
+    updateData: UpdateQuery<Order>,
+  ): Promise<Order | null> {
+    return await this.orderModel
+      .findByIdAndUpdate(id, updateData, { returnDocument: 'after' })
+      .lean()
+      .exec();
+  }
+
+  async delete(id: string): Promise<Order | null> {
+    return this.orderModel.findByIdAndDelete(id).exec();
   }
 }

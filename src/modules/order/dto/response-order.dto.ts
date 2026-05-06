@@ -18,8 +18,28 @@ export class ResponseOrderDto {
 
   @ApiProperty({ example: '507f1f77bcf86cd799439011' })
   @Expose()
-  @Transform(({ obj }) => obj.userId?.toString())
+  @Transform(({ obj }) => obj.userId?._id)
   userId: string;
+
+  @ApiProperty({ example: 'Nguyễn Văn A' })
+  @Expose()
+  @Transform(({ obj }) => obj.userId?.name)
+  userName: string;
+
+  @ApiProperty({ example: 'vana@gmail.com' })
+  @Expose()
+  @Transform(({ obj }) => obj.userId?.email)
+  userEmail: string;
+
+  @ApiProperty({ example: 'Hồ Chí Minh' })
+  @Expose()
+  @Transform(({ obj }) => obj.userId?.address)
+  userAddress: string;
+
+  @ApiProperty({ example: 'Hồ Chí Minh' })
+  @Expose()
+  @Transform(({ obj }) => obj.userId?.isRegular)
+  isRegular: boolean;
 
   @Expose()
   @ApiProperty({ type: [ResponseOrderItemDto] })

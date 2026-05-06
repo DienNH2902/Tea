@@ -12,11 +12,12 @@ import { Types } from 'mongoose';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { ResponseOrderDto } from './dto/response-order.dto';
 import { plainToInstance } from 'class-transformer';
+import { UpdateOrderDto } from './dto/update-order.dto';
 
 @Injectable()
 export class OrdersService {
   constructor(
-    private readonly ordersRepository: OrdersRepository,
+    private readonly orderRepository: OrdersRepository,
     private readonly teaService: TeaService,
   ) {}
 
@@ -66,7 +67,7 @@ export class OrdersService {
     }
 
     // 6. Tạo đơn hàng hoàn chỉnh
-    const order = await this.ordersRepository.create({
+    const order = await this.orderRepository.create({
       userId: new Types.ObjectId(userId) as unknown as Types.ObjectId,
       items: orderItems,
       totalPrice,
@@ -80,7 +81,7 @@ export class OrdersService {
   }
 
   async getAllOrdersByUserId(userId: string): Promise<ResponseOrderDto[]> {
-    const orders = await this.ordersRepository.findAllByUserId(userId);
+    const orders = await this.orderRepository.findAllByUserId(userId);
     if (!orders || orders.length === 0) {
       throw new NotFoundException(
         `Không tìm thấy đơn hàng với user ID ${userId}`,
@@ -90,7 +91,7 @@ export class OrdersService {
   }
 
   async findOne(orderId: string): Promise<ResponseOrderDto> {
-    const order = await this.ordersRepository.findOne(orderId);
+    const order = await this.orderRepository.findOne(orderId);
     if (!order) {
       throw new NotFoundException(`Không tìm thấy đơn hàng với ID ${orderId}`);
     }
@@ -99,16 +100,38 @@ export class OrdersService {
 
   async updateStatus(id: string, updateDto: UpdateOrderStatusDto) {
     // Giả sử updateDto của bạn có trường status
-    const updated = await this.ordersRepository.updateOrderStatusById(
+    const updated = await this.orderRepository.updateOrderStatusById(
       id,
       updateDto.status,
     );
 
     if (!updated) {
-      throw new NotFoundException('Không tìm thấy đơn hàng');
+      throw new NotFoundException('Không tìm thấy đơn hàng, cập nhật thất bại');
     }
 
     return this.toResponseDto(updated);
+  }
+
+  async updateOrder(
+    id: string,
+    updateTeaDto: UpdateOrderDto,
+  ): Promise<ResponseOrderDto> {
+    const updateOrder = await this.orderRepository.findByIdAndUpdate(
+      id,
+      updateTeaDto,
+    );
+
+    if (!updateOrder) {
+      throw new NotFoundException(`Tea with ID ${id} not found`);
+    }
+
+    return this.toResponseDto(updateOrder);
+  }
+
+  async removeOrder(id: string) {
+    const result = await this.orderRepository.delete(id);
+    if (!result) throw new NotFoundException('Không tìm thấy đơn hàng');
+    return { message: 'Đã xóa khỏi danh sách đơn hàng' };
   }
 
   // 🔥 Helpers Transform giống hệt User example

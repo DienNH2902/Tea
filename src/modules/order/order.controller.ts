@@ -7,6 +7,7 @@ import {
   Param,
   UseGuards,
   Request,
+  Delete,
 } from '@nestjs/common';
 
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -23,6 +24,7 @@ import {
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { UpdateOrderDto } from './dto/update-order.dto';
 
 @ApiTags('order')
 @ApiBearerAuth()
@@ -60,8 +62,7 @@ export class OrderController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(RoleEnum.ADMIN, RoleEnum.MANAGER)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get order by id' })
   async findOne(@Param('id') id: string): Promise<ResponseOrderDto> {
     return await this.orderService.findOne(id);
@@ -77,6 +78,17 @@ export class OrderController {
   }
 
   @Patch(':id')
+  @ApiOperation({ summary: 'Update order by ID' })
+  @UseGuards(JwtAuthGuard)
+  @ApiBody({ type: UpdateOrderDto })
+  updateOrder(
+    @Param('id') id: string,
+    @Body() updateOrderDto: UpdateOrderDto,
+  ): Promise<UpdateOrderDto> {
+    return this.orderService.updateOrder(id, updateOrderDto);
+  }
+
+  @Patch('status/:id')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'update order status' })
   update(
@@ -86,8 +98,10 @@ export class OrderController {
     return this.orderService.updateStatus(id, updateOrderStatusDto);
   }
 
-  // @Delete(':id')
-  // remove(@Param('id') id: string) {
-  //   return this.orderService.remove(+id);
-  // }
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'delete order' })
+  remove(@Param('id') id: string) {
+    return this.orderService.removeOrder(id);
+  }
 }
