@@ -2,6 +2,7 @@ import {
   Injectable,
   ConflictException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { CartRepository } from './cart.repository';
 import { CreateCartDto } from './dto/create-cart.dto';
@@ -23,6 +24,18 @@ export class CartService {
     const existing = await this.cartRepository.findOne(userId, teaId);
     if (existing) {
       throw new ConflictException('Món này đã có trong danh sách yêu thích');
+    }
+
+    const tea = await this.cartRepository.findTeaById(teaId);
+
+    if (!tea) {
+      throw new NotFoundException('Không tìm thấy loại chè này');
+    }
+
+    if (!tea.isAvailable) {
+      throw new BadRequestException(
+        'Loại chè này hiện không còn kinh doanh hoặc đã ngừng bán',
+      );
     }
 
     const item = await this.cartRepository.create({

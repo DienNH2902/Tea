@@ -3,10 +3,14 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, QueryFilter, UpdateQuery } from 'mongoose';
 import { Tea } from './schemas/tea.schema';
 import { SortTeaByPrice } from 'src/constants/teaSortByPrice-type.enum';
+import { Order } from '../order/schemas/order.schema';
 
 @Injectable()
 export class TeaRepository {
-  constructor(@InjectModel(Tea.name) private teaModel: Model<Tea>) {}
+  constructor(
+    @InjectModel(Tea.name) private teaModel: Model<Tea>,
+    @InjectModel(Order.name) private orderModel: Model<Order>,
+  ) {}
 
   async create(tea: Partial<Tea>): Promise<Tea> {
     const newTea = new this.teaModel(tea);
@@ -49,12 +53,23 @@ export class TeaRepository {
       .exec()) as unknown as Tea | null;
   }
 
+  // async findTeaById(teaId: string): Promise<Tea | null> {
+  //   return this.teaModel.findById(teaId).lean().exec();
+  // }
+
+  async findOrderByTeaId(teaId: string): Promise<Order | null> {
+    return this.orderModel
+      .findOne({ 'items.teaId': `${teaId}` })
+      .lean()
+      .exec();
+  }
+
   async findByIdAndUpdate(
     id: string,
     updateData: UpdateQuery<Tea>,
   ): Promise<Tea | null> {
     return (await this.teaModel
-      .findByIdAndUpdate(id, updateData, { new: true })
+      .findByIdAndUpdate(id, updateData, { returnDocument: 'after' })
       .lean()
       .exec()) as unknown as Tea | null;
   }
@@ -66,7 +81,7 @@ export class TeaRepository {
         {
           $inc: { stock: quantity }, // Sử dụng $inc để cộng/trừ trực tiếp trong DB
         },
-        { new: true }, // Trả về data sau khi đã cập nhật
+        { returnDocument: 'after' }, // Trả về data sau khi đã cập nhật
       )
       .exec();
   }

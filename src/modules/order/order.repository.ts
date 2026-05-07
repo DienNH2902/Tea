@@ -28,6 +28,13 @@ export class OrdersRepository {
     return this.orderModel.findById(id).lean().exec();
   }
 
+  // async findOrderByTeaId(teaId: string): Promise<Order | null> {
+  //   return this.orderModel
+  //     .findById({ teaId: new Types.ObjectId(teaId) })
+  //     .lean()
+  //     .exec();
+  // }
+
   async updateOrderStatusById(
     id: string,
     status: OrderStatus,

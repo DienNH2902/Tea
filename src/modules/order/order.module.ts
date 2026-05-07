@@ -14,6 +14,6 @@ import { TeaModule } from '../tea/tea.module';
   ],
   controllers: [OrderController],
   providers: [OrdersService, OrdersRepository],
-  exports: [OrdersRepository, OrdersService],
+  exports: [OrdersService, OrdersRepository],
 })
 export class OrderModule {}

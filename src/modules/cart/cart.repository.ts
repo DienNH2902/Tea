@@ -3,10 +3,14 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Cart, CartDocument } from './schemas/cart.schema';
 import { UpdateCartDto } from './dto/update-cart.dto';
+import { Tea, TeaDocument } from '../tea/schemas/tea.schema';
 
 @Injectable()
 export class CartRepository {
-  constructor(@InjectModel(Cart.name) private cartModel: Model<CartDocument>) {}
+  constructor(
+    @InjectModel(Cart.name) private cartModel: Model<CartDocument>,
+    @InjectModel(Tea.name) private teaModel: Model<TeaDocument>,
+  ) {}
 
   async create(data: Partial<Cart>): Promise<Cart> {
     const newItem = new this.cartModel(data);
@@ -30,6 +34,10 @@ export class CartRepository {
       })
       .lean()
       .exec();
+  }
+
+  async findTeaById(teaId: string): Promise<Tea | null> {
+    return this.teaModel.findById(teaId).lean().exec();
   }
 
   async update(id: string, updateCartDto: UpdateCartDto): Promise<Cart | null> {

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -84,6 +85,18 @@ export class TeaService {
       throw new NotFoundException(`Tea with ID ${id} not found`);
     }
 
+    if (updatedTea.stock <= 0) {
+      await this.teaRepository.findByIdAndUpdate(id, {
+        isAvailable: false,
+        stock: 0,
+      });
+      updatedTea.isAvailable = false;
+      updatedTea.stock = 0;
+    } else if (updatedTea.stock > 0 && !updatedTea.isAvailable) {
+      await this.teaRepository.findByIdAndUpdate(id, { isAvailable: true });
+      updatedTea.isAvailable = true;
+    }
+
     return this.toResponseDto(updatedTea);
   }
 
@@ -113,9 +126,16 @@ export class TeaService {
   }
 
   async remove(id: string): Promise<void> {
-    const deleted = await this.teaRepository.delete(id);
-    if (!deleted) {
-      throw new NotFoundException(`Tea with ID ${id} not found`);
+    const linkedOrder = await this.teaRepository.findOrderByTeaId(id);
+    if (linkedOrder) {
+      throw new BadRequestException(
+        `Cannot delete tea with ID ${id} because related in an order`,
+      );
+    } else {
+      const deleted = await this.teaRepository.delete(id);
+      if (!deleted) {
+        throw new NotFoundException(`Tea with ID ${id} not found`);
+      }
     }
   }
 

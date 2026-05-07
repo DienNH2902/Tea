@@ -44,7 +44,7 @@ export class OrdersService {
 
       if (!tea.isAvailable || tea.stock < item.quantity) {
         throw new BadRequestException(
-          `Sản phẩm "${tea.name}" hiện không đủ hàng hoặc đã ngừng bán`,
+          `Sản phẩm ${tea.name} hiện không đủ hàng hoặc đã ngừng bán, trạng thái còn hàng: ${tea.isAvailable}, số lượng kho: ${tea.stock}`,
         );
       }
 
@@ -112,18 +112,42 @@ export class OrdersService {
     return this.toResponseDto(updated);
   }
 
+  // async updateOrder(
+  //   id: string,
+  //   updateTeaDto: UpdateOrderDto,
+  // ): Promise<ResponseOrderDto> {
+  //   const updateOrder = await this.orderRepository.findByIdAndUpdate(
+  //     id,
+  //     updateTeaDto,
+  //   );
+
+  //   if (!updateOrder) {
+  //     throw new NotFoundException(`Order with ID ${id} not found`);
+  //   }
+
+  //   return this.toResponseDto(updateOrder);
+  // }
+
   async updateOrder(
     id: string,
     updateTeaDto: UpdateOrderDto,
   ): Promise<ResponseOrderDto> {
-    const updateOrder = await this.orderRepository.findByIdAndUpdate(
+    const currentOrder = await this.orderRepository.findOne(id);
+
+    if (!currentOrder) {
+      throw new NotFoundException(`Order with ID ${id} not found`);
+    }
+
+    if (currentOrder.status != OrderStatus.PENDING) {
+      throw new BadRequestException(
+        `Current order status: ${currentOrder.status}, cannot update Order with ID ${id}`,
+      );
+    }
+
+    const updateOrder = this.orderRepository.findByIdAndUpdate(
       id,
       updateTeaDto,
     );
-
-    if (!updateOrder) {
-      throw new NotFoundException(`Tea with ID ${id} not found`);
-    }
 
     return this.toResponseDto(updateOrder);
   }

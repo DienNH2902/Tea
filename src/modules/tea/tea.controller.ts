@@ -106,7 +106,7 @@ export class TeaController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update tea by ID' })
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleEnum.ADMIN, RoleEnum.MANAGER)
+  // @Roles(RoleEnum.ADMIN, RoleEnum.MANAGER)
   @ApiBody({ type: UpdateTeaDto })
   update(
     @Param('id') id: string,
