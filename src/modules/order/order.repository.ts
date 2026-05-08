@@ -3,11 +3,13 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, UpdateQuery } from 'mongoose';
 import { Order, OrderDocument } from './schemas/order.schema';
 import { OrderStatus } from 'src/constants/statusEnum.enum';
+import { Tea, TeaDocument } from '../tea/schemas/tea.schema';
 
 @Injectable()
 export class OrdersRepository {
   constructor(
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
+    @InjectModel(Tea.name) private teaModel: Model<TeaDocument>,
   ) {}
 
   async create(orderData: Partial<Order>): Promise<Order> {
@@ -47,6 +49,25 @@ export class OrdersRepository {
       )
       .lean()
       .exec();
+  }
+
+  async updateTeaStock(id: string, quantity: number): Promise<Tea | null> {
+    const updateTea = await this.teaModel
+      .findByIdAndUpdate(
+        id,
+        {
+          $inc: { stock: quantity }, // Sử dụng $inc để cộng/trừ trực tiếp trong DB
+        },
+        { returnDocument: 'after' }, // Trả về data sau khi đã cập nhật
+      )
+      .exec();
+
+    if (updateTea && updateTea.stock > 0 && !updateTea.isAvailable) {
+      await this.teaModel.findByIdAndUpdate(id, { isAvailable: true });
+      updateTea.isAvailable = true;
+    }
+
+    return updateTea;
   }
 
   async findByIdAndUpdate(

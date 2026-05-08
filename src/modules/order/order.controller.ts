@@ -8,6 +8,7 @@ import {
   UseGuards,
   Request,
   Delete,
+  Req,
 } from '@nestjs/common';
 
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -94,8 +95,9 @@ export class OrderController {
   update(
     @Param('id') id: string,
     @Body() updateOrderStatusDto: UpdateOrderStatusDto,
+    @Req() req: any,
   ): Promise<ResponseOrderDto> {
-    return this.orderService.updateStatus(id, updateOrderStatusDto);
+    return this.orderService.updateStatus(id, updateOrderStatusDto, req.user);
   }
 
   @Delete(':id')

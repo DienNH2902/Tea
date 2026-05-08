@@ -1,7 +1,9 @@
+import { RoleEnum } from 'src/constants/roleEnum.enum';
 import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { TeaService } from '../tea/tea.service';
@@ -98,7 +100,51 @@ export class OrdersService {
     return this.toResponseDto(order);
   }
 
-  async updateStatus(id: string, updateDto: UpdateOrderStatusDto) {
+  async updateStatus(
+    id: string,
+    updateDto: UpdateOrderStatusDto,
+    currentUser: any,
+  ) {
+    const order = await this.orderRepository.findOne(id);
+    if (!order) {
+      throw new NotFoundException(`Không tìm thấy đơn hàng với ID: ${id}`);
+    }
+
+    const isOwner = order.userId.toString() === currentUser._id.toString();
+    const isAdminOrManager = [RoleEnum.ADMIN, RoleEnum.MANAGER].includes(
+      currentUser.role,
+    );
+
+    if (!isOwner && !isAdminOrManager) {
+      throw new ForbiddenException(
+        'Bạn không có quyền thực hiện hành động này',
+      );
+    }
+
+    if (!isAdminOrManager && updateDto.status !== OrderStatus.CANCELLED) {
+      throw new ForbiddenException(
+        'Bạn chỉ có quyền hủy đơn, không có quyền cập nhật trạng thái',
+      );
+    }
+
+    if (
+      order.status === OrderStatus.CANCELLED ||
+      order.status === OrderStatus.DELIVERED
+    ) {
+      throw new BadRequestException(
+        `Trạng thái đơn hàng: ${order.status}, không thể cập nhật`,
+      );
+    }
+
+    if (updateDto.status == OrderStatus.CANCELLED) {
+      for (const item of order.items) {
+        await this.orderRepository.updateTeaStock(
+          item.teaId.toString(),
+          item.quantity,
+        );
+      }
+    }
+
     // Giả sử updateDto của bạn có trường status
     const updated = await this.orderRepository.updateOrderStatusById(
       id,
@@ -106,7 +152,7 @@ export class OrdersService {
     );
 
     if (!updated) {
-      throw new NotFoundException('Không tìm thấy đơn hàng, cập nhật thất bại');
+      throw new NotFoundException('Cập nhật thất bại');
     }
 
     return this.toResponseDto(updated);
@@ -130,7 +176,7 @@ export class OrdersService {
 
   async updateOrder(
     id: string,
-    updateTeaDto: UpdateOrderDto,
+    updateOrderDto: UpdateOrderDto,
   ): Promise<ResponseOrderDto> {
     const currentOrder = await this.orderRepository.findOne(id);
 
@@ -146,10 +192,37 @@ export class OrdersService {
 
     const updateOrder = this.orderRepository.findByIdAndUpdate(
       id,
-      updateTeaDto,
+      updateOrderDto,
     );
 
     return this.toResponseDto(updateOrder);
+  }
+
+  async cancelOrder(id: string): Promise<ResponseOrderDto> {
+    const order = await this.orderRepository.findOne(id);
+    if (!order) {
+      throw new NotFoundException(`Không tìm thấy đơn hàng với ID ${id}`);
+    }
+
+    if (order.status != OrderStatus.PENDING) {
+      throw new BadRequestException(
+        `Trạng thái đơn hàng: ${order.status}, không thể hủy`,
+      );
+    }
+
+    for (const item of order.items) {
+      await this.orderRepository.updateTeaStock(
+        item.teaId.toString(),
+        item.quantity,
+      );
+    }
+
+    const cancelOrder = this.orderRepository.updateOrderStatusById(
+      id,
+      OrderStatus.CANCELLED,
+    );
+
+    return this.toResponseDto(cancelOrder);
   }
 
   async removeOrder(id: string) {
