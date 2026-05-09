@@ -10,9 +10,13 @@ import { plainToInstance } from 'class-transformer';
 import { ResponseUserDto } from './dto/response-user.dto';
 import { UsersRepository } from './users.repository';
 import { GenderEnum } from 'src/constants/genderEnum.enum';
+import { MailService } from '../mail/mail.service';
 @Injectable()
 export class UsersService {
-  constructor(private readonly usersRepository: UsersRepository) {}
+  constructor(
+    private readonly usersRepository: UsersRepository,
+    private readonly mailService: MailService,
+  ) {}
 
   async create(createUserDto: CreateUserDto): Promise<ResponseUserDto> {
     const checkExistedEmail = await this.usersRepository.findOne({
@@ -30,6 +34,13 @@ export class UsersService {
       ...createUserDto,
       password: hashedPassword,
     });
+
+    this.mailService
+      .sendWelcomeEmail(createUserDto.email, createUserDto.name)
+      .catch((err) => {
+        // Chỉ log lỗi ra console chứ không crash API đăng ký của khách hàng
+        console.error('Lỗi gửi mail ngầm:', err);
+      });
 
     return this.toResponseDto(createdUser);
   }
