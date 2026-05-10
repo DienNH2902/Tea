@@ -15,12 +15,16 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { ResponseOrderDto } from './dto/response-order.dto';
 import { plainToInstance } from 'class-transformer';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { MailService } from '../mail/mail.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class OrdersService {
   constructor(
     private readonly orderRepository: OrdersRepository,
     private readonly teaService: TeaService,
+    private readonly mailService: MailService,
+    private readonly userService: UsersService,
   ) {}
 
   async create(
@@ -78,6 +82,28 @@ export class OrdersService {
       note,
       status: OrderStatus.PENDING,
     });
+
+    // 2. Sau khi lưu thành công, gửi mail ngay (gửi ngầm để không chậm API)
+    const user = await this.userService.findOne(userId);
+
+    if (user) {
+      this.mailService
+        .sendMail(
+          user.email, // TypeScript sẽ hiểu user.email tồn tại ở đây
+          `Xác nhận đơn hàng #${(order as any)._id.toString().toUpperCase()}`,
+          'order-success',
+          {
+            name: user.name || 'Khách hàng',
+            orderId: (order as any)._id.toString(),
+            items: orderItems,
+            totalPrice: totalPrice.toLocaleString(),
+            shippingAddress,
+            phoneNumber,
+            note: note || 'Không có ghi chú',
+          },
+        )
+        .catch((err) => console.error('Gửi mail hóa đơn thất bại:', err));
+    }
 
     return this.toResponseDto(order);
   }
