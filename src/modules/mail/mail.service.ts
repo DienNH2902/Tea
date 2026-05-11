@@ -62,4 +62,16 @@ export class MailService {
       email: to,
     });
   }
+
+  // async sendVerificationEmail(to: string, name: string, otpCode: string) {
+  //   return this.sendMail(
+  //     to,
+  //     'Mã xác thực đăng ký tài khoản PolyGo',
+  //     'verify-email',
+  //     {
+  //       name,
+  //       otpCode,
+  //     },
+  //   );
+  // }
 }

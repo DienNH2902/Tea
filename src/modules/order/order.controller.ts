@@ -106,4 +106,11 @@ export class OrderController {
   remove(@Param('id') id: string) {
     return this.orderService.removeOrder(id);
   }
+
+  @Post('webhook')
+  @ApiOperation({ summary: 'PayOS Webhook' })
+  async handlePayosWebhook(@Body() body: any) {
+    // Controller chỉ gọi sang Service, không trực tiếp xử lý Mail hay DB
+    return await this.orderService.handleWebhook(body);
+  }
 }

@@ -28,12 +28,21 @@ export class UsersService {
         `Email ${createUserDto.email} đã được sử dụng bởi người dùng khác`,
       );
     }
+
+    // const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
     const hashedPassword = await HashUtil.hash(createUserDto.password);
 
     const createdUser = await this.usersRepository.create({
       ...createUserDto,
       password: hashedPassword,
     });
+
+    // this.mailService
+    //   .sendVerificationEmail(createUserDto.email, createUserDto.name, otpCode)
+    //   .catch((err) => {
+    //     console.error('Lỗi gửi mail xác thực:', err);
+    //   });
 
     this.mailService
       .sendWelcomeEmail(createUserDto.email, createUserDto.name)

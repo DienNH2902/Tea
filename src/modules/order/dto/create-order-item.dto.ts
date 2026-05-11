@@ -3,7 +3,7 @@ import { ApiProperty } from 'node_modules/@nestjs/swagger/dist';
 
 export class CreateOrderItemDto {
   @ApiProperty({
-    example: '69ef285cd5e67ad2231658ba',
+    example: '69ef2878d5e67ad2231658be',
     description: 'ID của loại trà',
   })
   @IsString()
