@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -11,6 +12,7 @@ import { ResponseUserDto } from './dto/response-user.dto';
 import { UsersRepository } from './users.repository';
 import { GenderEnum } from 'src/constants/genderEnum.enum';
 import { MailService } from '../mail/mail.service';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 @Injectable()
 export class UsersService {
   constructor(
@@ -100,6 +102,32 @@ export class UsersService {
     }
 
     return this.toResponseDto(updatedUser);
+  }
+
+  async updatePassword(
+    userId: string,
+    updatePasswordDto: UpdatePasswordDto,
+  ): Promise<{ message: string }> {
+    const { oldPassword, newPassword } = updatePasswordDto;
+
+    // 1. Tìm user trực tiếp bằng ID và lấy luôn mật khẩu
+    const user = await this.usersRepository.findByIdForAuth(userId);
+
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy người dùng');
+    }
+
+    // 3. Kiểm tra mật khẩu cũ
+    const isMatch = await HashUtil.compare(oldPassword, user.password);
+    if (!isMatch) {
+      throw new UnauthorizedException('Mật khẩu cũ không chính xác');
+    }
+
+    // 4. Hash mật khẩu mới và lưu
+    const hashedNewPassword = await HashUtil.hash(newPassword);
+    await this.usersRepository.updatePassword(userId, hashedNewPassword);
+
+    return { message: 'Đổi mật khẩu thành công' };
   }
 
   async remove(id: string): Promise<void> {

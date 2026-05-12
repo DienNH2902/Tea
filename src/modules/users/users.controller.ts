@@ -26,7 +26,12 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
+import { UpdatePasswordDto } from './dto/update-password.dto';
+import { IUserPayload } from 'src/interface/user-payload.interface';
 
+interface RequestWithUser extends Request {
+  user: IUserPayload;
+}
 @ApiTags('users')
 @ApiBearerAuth()
 @Controller('users')
@@ -71,7 +76,7 @@ export class UsersController {
   @Get('profile')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get current user information' })
-  getProfile(@Request() req: any): Promise<ResponseUserDto> {
+  getProfile(@Request() req: RequestWithUser): any {
     return req.user;
   }
 
@@ -91,6 +96,19 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
   ): Promise<ResponseUserDto> {
     return this.usersService.update(id, updateUserDto);
+  }
+
+  @Patch('profile/change-password')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Change password for current user' })
+  @ApiBody({ type: UpdatePasswordDto })
+  async changePassword(
+    @Request() req: RequestWithUser,
+    @Body() updatePasswordDto: UpdatePasswordDto,
+  ) {
+    // Lấy id từ user đã login (được JwtStrategy đính vào req.user)
+    const userId = req.user._id;
+    return this.usersService.updatePassword(userId, updatePasswordDto);
   }
 
   @Delete(':id')

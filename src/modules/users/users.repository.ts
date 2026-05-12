@@ -49,6 +49,14 @@ export class UsersRepository {
       .exec()) as unknown as User | null;
   }
 
+  async updatePassword(id: string, hashedNewPassword: string): Promise<void> {
+    await this.userModel
+      .findByIdAndUpdate(id, {
+        $set: { password: hashedNewPassword },
+      })
+      .exec();
+  }
+
   async delete(id: string): Promise<User | null> {
     return this.userModel.findByIdAndDelete(id).exec();
   }
@@ -57,6 +65,14 @@ export class UsersRepository {
     return (await this.userModel
       .findOne({ email })
       .select('+password') // Ép Mongoose phải lấy field password ra
+      .lean()
+      .exec()) as User | null;
+  }
+
+  async findByIdForAuth(id: string): Promise<User | null> {
+    return (await this.userModel
+      .findById(id)
+      .select('+password') // Lấy mật khẩu ra để kiểm tra
       .lean()
       .exec()) as User | null;
   }

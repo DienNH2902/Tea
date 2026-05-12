@@ -46,7 +46,7 @@ export class AuthService {
     // Tìm user (Lưu ý: Bạn cần một method trong repo cho phép lấy cả password)
     // Ở đây mình tạm dùng findOne, hãy đảm bảo Repo của bạn có method lấy pass khi cần auth
     const user = await this.usersRepository.findByEmailForAuth(email);
-    // Vì repo của bạn đang select('-password'), bạn nên bổ sung 1 hàm findByEmail trong Repo nhé.
+    // Vì repo của bạn đang select('-password'), bạn nên bổ sung 1 hàm findByEmail trong Repo.
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
@@ -67,12 +67,6 @@ export class AuthService {
     return {
       access_token: await this.jwtService.signAsync(payload),
       user: new ResponseUserDto(user),
-      // user: {
-      //   _id: user._id,
-      //   name: user.name,
-      //   email: user.email,
-      //   role: user.role,
-      // },
       refresh_token: await this.jwtService.signAsync(payload, {
         expiresIn: '7d',
       }),
