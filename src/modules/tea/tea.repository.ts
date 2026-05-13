@@ -17,8 +17,23 @@ export class TeaRepository {
     return newTea.save();
   }
 
-  async findAll(): Promise<Tea[]> {
-    return this.teaModel.find().lean().exec() as Promise<Tea[]>;
+  // async findAll(): Promise<Tea[]> {
+  //   return this.teaModel.find().lean().exec() as Promise<Tea[]>;
+  // }
+
+  async findAll(
+    page: number,
+    limit: number,
+  ): Promise<{ data: Tea[]; total: number }> {
+    const skip = (page - 1) * limit;
+
+    // Chạy song song cả 2 lệnh để tối ưu tốc độ
+    const [data, total] = await Promise.all([
+      this.teaModel.find().skip(skip).limit(limit).lean().exec(),
+      this.teaModel.countDocuments().exec(),
+    ]);
+
+    return { data, total };
   }
 
   async findByTeaType(teaType: string): Promise<Tea[] | null> {

@@ -29,6 +29,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
+import { PaginatedResult } from 'src/interface/pagination.interface';
 
 @ApiTags('tea')
 @ApiBearerAuth()
@@ -45,10 +46,21 @@ export class TeaController {
     return this.teaService.create(createTeaDto);
   }
 
+  // @Get()
+  // @ApiOperation({ summary: 'Get all tea products' })
+  // findAll(): Promise<ResponseTeaDto[]> {
+  //   return this.teaService.findAll();
+  // }
+
   @Get()
-  @ApiOperation({ summary: 'Get all tea products' })
-  findAll(): Promise<ResponseTeaDto[]> {
-    return this.teaService.findAll();
+  @ApiOperation({ summary: 'Get all teas with pagination' })
+  @ApiQuery({ name: 'pageNumber', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number, example: 10 })
+  async findAll(
+    @Query('pageNumber') page?: number,
+    @Query('pageSize') limit?: number,
+  ): Promise<PaginatedResult<ResponseTeaDto>> {
+    return this.teaService.findAll(Number(page) || 1, Number(limit) || 10);
   }
 
   @Get('byTeaType')

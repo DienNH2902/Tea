@@ -10,6 +10,7 @@ import { plainToInstance } from 'class-transformer';
 import { ResponseTeaDto } from './dto/response-tea.dto';
 import { TeaRepository } from './tea.repository';
 import { SortTeaByPrice } from 'src/constants/teaSortByPrice-type.enum';
+import { PaginatedResult } from 'src/interface/pagination.interface';
 
 @Injectable()
 export class TeaService {
@@ -59,9 +60,31 @@ export class TeaService {
     return sortedTeas.map((tea) => this.toResponseDto(tea));
   }
 
-  async findAll(): Promise<ResponseTeaDto[]> {
-    const teas = await this.teaRepository.findAll();
-    return teas.map((tea) => this.toResponseDto(tea));
+  // async findAll(): Promise<ResponseTeaDto[]> {
+  //   const teas = await this.teaRepository.findAll();
+  //   return teas.map((tea) => this.toResponseDto(tea));
+  // }
+
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<PaginatedResult<ResponseTeaDto>> {
+    // Khống chế tối đa 10 items để tránh quá tải
+    const pageSize = limit > 10 ? 10 : limit;
+    const pageNumber = page < 1 ? 1 : page;
+
+    const { data, total } = await this.teaRepository.findAll(
+      pageNumber,
+      pageSize,
+    );
+
+    return {
+      data: data.map((tea) => this.toResponseDto(tea)),
+      totalItems: total,
+      pageSize: pageSize,
+      pageNumber: pageNumber,
+      totalPages: Math.ceil(total / pageSize),
+    };
   }
 
   async findOne(id: string): Promise<ResponseTeaDto> {
