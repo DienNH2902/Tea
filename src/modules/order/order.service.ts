@@ -97,26 +97,26 @@ export class OrdersService {
     });
 
     // 2. Sau khi lưu thành công, gửi mail ngay (gửi ngầm để không chậm API)
-    const user = await this.userService.findOne(userId);
+    // const user = await this.userService.findOne(userId);
 
-    if (user) {
-      this.mailService
-        .sendMail(
-          user.email, // TypeScript sẽ hiểu user.email tồn tại ở đây
-          `Xác nhận đơn hàng #${(order as any)._id.toString().toUpperCase()}`,
-          'order-success',
-          {
-            name: user.name || 'Khách hàng',
-            orderId: (order as any)._id.toString(),
-            items: orderItems,
-            totalPrice: totalPrice.toLocaleString(),
-            shippingAddress,
-            phoneNumber,
-            note: note || 'Không có ghi chú',
-          },
-        )
-        .catch((err) => console.error('Gửi mail hóa đơn thất bại:', err));
-    }
+    // if (user) {
+    //   this.mailService
+    //     .sendMail(
+    //       user.email, // TypeScript sẽ hiểu user.email tồn tại ở đây
+    //       `Xác nhận đơn hàng #${(order as any)._id.toString().toUpperCase()}`,
+    //       'order-success',
+    //       {
+    //         name: user.name || 'Khách hàng',
+    //         orderId: (order as any)._id.toString(),
+    //         items: orderItems,
+    //         totalPrice: totalPrice.toLocaleString(),
+    //         shippingAddress,
+    //         phoneNumber,
+    //         note: note || 'Không có ghi chú',
+    //       },
+    //     )
+    //     .catch((err) => console.error('Gửi mail hóa đơn thất bại:', err));
+    // }
 
     return this.toResponseDto(order);
   }
