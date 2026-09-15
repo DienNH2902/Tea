@@ -18,9 +18,9 @@ import { IBehaviorNode, NodeStatus } from '../behavior-tree.types';
  * đã có câu trả lời chưa, nếu chưa thì tự tạo câu trả lời dự phòng, đảm bảo
  * KHÁCH LUÔN NHẬN ĐƯỢC PHẢN HỒI dù có lỗi xảy ra ở bước nào đó phía trước.
  */
-export class SelectorNode<TBlackboard = any>
-  implements IBehaviorNode<TBlackboard>
-{
+export class SelectorNode<
+  TBlackboard = any,
+> implements IBehaviorNode<TBlackboard> {
   constructor(
     public readonly name: string,
     private readonly children: IBehaviorNode<TBlackboard>[],

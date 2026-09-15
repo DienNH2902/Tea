@@ -24,8 +24,14 @@ export class AddToCartTool implements IBotTool {
   readonly inputSchema = {
     type: 'object',
     properties: {
-      teaId: { type: 'string', description: 'ID sản phẩm trà cần thêm vào giỏ' },
-      note: { type: 'string', description: 'Ghi chú của khách cho sản phẩm này (nếu có)' },
+      teaId: {
+        type: 'string',
+        description: 'ID sản phẩm trà cần thêm vào giỏ',
+      },
+      note: {
+        type: 'string',
+        description: 'Ghi chú của khách cho sản phẩm này (nếu có)',
+      },
     },
     required: ['teaId'],
   };

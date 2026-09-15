@@ -57,7 +57,7 @@ export class BotController {
     return this.botService.chat({
       sessionId: dto.sessionId,
       message: dto.message,
-      user: { _id: req.user._id, name: req.user.name },
+      user: { _id: req.user._id as string, name: req.user.name as string },
     });
   }
 }

@@ -5,13 +5,15 @@ export class ChatResponseDto {
   sessionId: string;
 
   @ApiProperty({
-    example: 'Dạ trà sen hiện còn 25 gói ạ, giá 150.000đ/gói. Anh/chị muốn đặt mấy gói ạ?',
+    example:
+      'Dạ trà sen hiện còn 25 gói ạ, giá 150.000đ/gói. Anh/chị muốn đặt mấy gói ạ?',
   })
   reply: string;
 
   @ApiProperty({
     example: ['check_stock'],
-    description: 'Danh sách tên các Tool BOT đã gọi để tạo ra câu trả lời trên (phục vụ debug/theo dõi)',
+    description:
+      'Danh sách tên các Tool BOT đã gọi để tạo ra câu trả lời trên (phục vụ debug/theo dõi)',
   })
   toolsUsed: string[];
 }

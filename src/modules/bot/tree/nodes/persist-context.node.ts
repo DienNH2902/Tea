@@ -19,7 +19,10 @@ export class PersistContextNode extends ActionNode<ConversationBlackboard> {
   }
 
   async run(blackboard: ConversationBlackboard): Promise<NodeStatus> {
-    this.conversationStore.saveHistory(blackboard.sessionId, blackboard.history);
+    this.conversationStore.saveHistory(
+      blackboard.sessionId,
+      blackboard.history,
+    );
     return NodeStatus.SUCCESS;
   }
 }

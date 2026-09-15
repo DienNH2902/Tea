@@ -13,9 +13,9 @@ import { IBehaviorNode, NodeStatus } from '../behavior-tree.types';
  * ví dụ: [Nạp ngữ cảnh] -> [Định tuyến & chạy Agent] -> [Đảm bảo có câu trả
  * lời] -> [Lưu lại lịch sử hội thoại].
  */
-export class SequenceNode<TBlackboard = any>
-  implements IBehaviorNode<TBlackboard>
-{
+export class SequenceNode<
+  TBlackboard = any,
+> implements IBehaviorNode<TBlackboard> {
   constructor(
     public readonly name: string,
     private readonly children: IBehaviorNode<TBlackboard>[],

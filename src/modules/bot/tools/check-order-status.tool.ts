@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { OrdersService } from 'src/modules/order/order.service';
 import { IBotTool, ToolExecutionResult } from './tool.interface';
 import { ConversationBlackboard } from '../blackboard/conversation-blackboard.interface';
@@ -68,7 +72,9 @@ export class CheckOrderStatusTool implements IBotTool {
       return { data: { found: true, recentOrders: myOrders.slice(0, 5) } };
     } catch (error) {
       if (error instanceof NotFoundException) {
-        return { data: { found: false, message: 'Khách chưa có đơn hàng nào.' } };
+        return {
+          data: { found: false, message: 'Khách chưa có đơn hàng nào.' },
+        };
       }
       if (error instanceof ForbiddenException) {
         return {

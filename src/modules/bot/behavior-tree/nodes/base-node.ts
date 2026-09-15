@@ -7,9 +7,9 @@ import { IBehaviorNode, NodeStatus } from '../behavior-tree.types';
  * Class con chỉ cần cài đặt hàm `run()` để thực hiện hành động, rồi tự quyết
  * định trả về SUCCESS hay FAILURE tùy kết quả.
  */
-export abstract class ActionNode<TBlackboard = any>
-  implements IBehaviorNode<TBlackboard>
-{
+export abstract class ActionNode<
+  TBlackboard = any,
+> implements IBehaviorNode<TBlackboard> {
   abstract readonly name: string;
   abstract run(blackboard: TBlackboard): Promise<NodeStatus>;
 }
@@ -21,9 +21,9 @@ export abstract class ActionNode<TBlackboard = any>
  * Class con chỉ cần cài đặt hàm `check()` trả về true/false, phần chuyển đổi
  * sang NodeStatus (SUCCESS/FAILURE) đã được lớp cha lo sẵn.
  */
-export abstract class ConditionNode<TBlackboard = any>
-  implements IBehaviorNode<TBlackboard>
-{
+export abstract class ConditionNode<
+  TBlackboard = any,
+> implements IBehaviorNode<TBlackboard> {
   abstract readonly name: string;
 
   /** Trả về true nếu điều kiện thỏa mãn, false nếu không */
