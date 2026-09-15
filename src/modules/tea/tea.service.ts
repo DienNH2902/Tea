@@ -44,9 +44,11 @@ export class TeaService {
 
   async findByTeaName(name: string): Promise<ResponseTeaDto[] | null> {
     const teas = await this.teaRepository.findByTeaName(name);
+
     if (!teas || teas.length === 0) {
       throw new NotFoundException(`No teas found with name: ${name}`);
     }
+
     return teas.map((tea) => this.toResponseDto(tea));
   }
 
@@ -54,9 +56,11 @@ export class TeaService {
     choose: SortTeaByPrice,
   ): Promise<ResponseTeaDto[] | null> {
     const sortedTeas = await this.teaRepository.sortTeaByPrice(choose);
+
     if (!sortedTeas || sortedTeas.length === 0) {
       throw new NotFoundException(`Cannot sort with type: ${choose}`);
     }
+
     return sortedTeas.map((tea) => this.toResponseDto(tea));
   }
 
@@ -89,9 +93,11 @@ export class TeaService {
 
   async findOne(id: string): Promise<ResponseTeaDto> {
     const tea = await this.teaRepository.findOne({ _id: id });
+
     if (!tea) {
       throw new NotFoundException(`Tea with ID ${id} not found`);
     }
+
     return this.toResponseDto(tea);
   }
 
@@ -113,10 +119,14 @@ export class TeaService {
         isAvailable: false,
         stock: 0,
       });
+
       updatedTea.isAvailable = false;
       updatedTea.stock = 0;
     } else if (updatedTea.stock > 0 && !updatedTea.isAvailable) {
-      await this.teaRepository.findByIdAndUpdate(id, { isAvailable: true });
+      await this.teaRepository.findByIdAndUpdate(id, {
+        isAvailable: true,
+      });
+
       updatedTea.isAvailable = true;
     }
 
@@ -138,10 +148,14 @@ export class TeaService {
         isAvailable: false,
         stock: 0,
       });
+
       updatedTea.isAvailable = false;
       updatedTea.stock = 0;
     } else if (updatedTea.stock > 0 && !updatedTea.isAvailable) {
-      await this.teaRepository.findByIdAndUpdate(id, { isAvailable: true });
+      await this.teaRepository.findByIdAndUpdate(id, {
+        isAvailable: true,
+      });
+
       updatedTea.isAvailable = true;
     }
 
@@ -150,12 +164,14 @@ export class TeaService {
 
   async remove(id: string): Promise<void> {
     const linkedOrder = await this.teaRepository.findOrderByTeaId(id);
+
     if (linkedOrder) {
       throw new BadRequestException(
         `Cannot delete tea with ID ${id} because related in an order`,
       );
     } else {
       const deleted = await this.teaRepository.delete(id);
+
       if (!deleted) {
         throw new NotFoundException(`Tea with ID ${id} not found`);
       }

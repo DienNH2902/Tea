@@ -43,6 +43,10 @@ export class OrdersService {
   async create(
     userId: string,
     createOrderDto: CreateOrderDto,
+    // Kênh tạo đơn: 'web' = khách tự đặt qua web/app (mặc định, giữ nguyên
+    // hành vi cũ), 'bot' = do BOT AI tạo giúp khách sau khi tự kiểm kho và
+    // xác nhận với khách qua chat (xem src/modules/bot/tools/create-order.tool.ts)
+    channel: 'web' | 'bot' = 'web',
   ): Promise<ResponseOrderDto> {
     const { items, shippingAddress, phoneNumber, note } = createOrderDto;
     let totalPrice = 0;
@@ -94,6 +98,7 @@ export class OrdersService {
       phoneNumber,
       note,
       status: OrderStatus.PENDING,
+      channel,
     });
 
     // 2. Sau khi lưu thành công, gửi mail ngay (gửi ngầm để không chậm API)

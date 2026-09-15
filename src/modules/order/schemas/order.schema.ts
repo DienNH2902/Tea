@@ -31,6 +31,13 @@ export class Order {
 
   @Prop({ type: String })
   note: string; // Ghi chú của khách (ví dụ: "ít đường", "giao giờ hành chính")
+
+  // Kênh mà đơn hàng được tạo ra: 'web' (khách tự đặt qua web/app như cũ)
+  // hoặc 'bot' (khách chat với BOT AI và được BOT tạo đơn giúp).
+  // Trường này phục vụ thống kê/báo cáo sau này (ví dụ: bao nhiêu % đơn
+  // hàng tới từ BOT), KHÔNG ảnh hưởng gì tới luồng xử lý đơn hàng hiện có.
+  @Prop({ type: String, enum: ['web', 'bot'], default: 'web' })
+  channel: string;
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order);

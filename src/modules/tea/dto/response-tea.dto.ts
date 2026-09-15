@@ -14,6 +14,16 @@ export class ResponseTeaDto {
   name: string;
 
   @Expose()
+  @ApiProperty({
+    example: 'West Lake Lotus Tea',
+    description:
+      'Tên tiếng Anh của sản phẩm - dùng để khách hàng/BOT tìm kiếm khi ' +
+      'gõ tên bằng tiếng Anh (trước đây field này bị loại khỏi response ' +
+      'do thiếu @Expose(), khiến BOT không thể nhận diện tên tiếng Anh).',
+  })
+  nameEn: string;
+
+  @Expose()
   @ApiProperty({ example: TeaType.GREEN_TEA, enum: TeaType })
   type: TeaType;
 

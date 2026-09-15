@@ -15,5 +15,6 @@ import { Tea, TeaSchema } from '../tea/schemas/tea.schema';
   ],
   controllers: [CartController],
   providers: [CartService, CartRepository],
+  exports: [CartService],
 })
 export class CartModule {}

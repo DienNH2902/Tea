@@ -46,7 +46,14 @@ export class TeaRepository {
   async findByTeaName(name: string): Promise<Tea[] | null> {
     return await this.teaModel
       .find({
-        name: { $regex: name, $options: 'i' }, // 'i' là không phân biệt hoa thường
+        $or: [
+          {
+            name: { $regex: name, $options: 'i' },
+          },
+          {
+            nameEn: { $regex: name, $options: 'i' },
+          },
+        ],
       })
       .lean()
       .exec();
@@ -69,7 +76,7 @@ export class TeaRepository {
   }
 
   // async findTeaById(teaId: string): Promise<Tea | null> {
-  //   return this.teaModel.findById(teaId).lean().exec();
+  //   return this.teaModel.findById(id).lean().exec();
   // }
 
   async findOrderByTeaId(teaId: string): Promise<Order | null> {
@@ -94,9 +101,9 @@ export class TeaRepository {
       .findByIdAndUpdate(
         id,
         {
-          $inc: { stock: quantity }, // Sử dụng $inc để cộng/trừ trực tiếp trong DB
+          $inc: { stock: quantity },
         },
-        { returnDocument: 'after' }, // Trả về data sau khi đã cập nhật
+        { returnDocument: 'after' },
       )
       .exec();
   }

@@ -11,6 +11,7 @@ import { CartModule } from './modules/cart/cart.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from 'node_modules/@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { join } from 'path';
+import { BotModule } from './modules/bot/bot.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { join } from 'path';
     AuthModule,
     OrderModule,
     CartModule,
+    BotModule,
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({

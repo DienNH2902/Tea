@@ -38,6 +38,7 @@
     "handlebars": "^4.7.9",
     "mongoose": "^9.4.1",
     "nodemailer": "^8.0.7",
+    "openai": "^7.13.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
