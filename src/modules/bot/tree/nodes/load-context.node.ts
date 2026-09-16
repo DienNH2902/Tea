@@ -17,6 +17,7 @@ export class LoadContextNode extends ActionNode<ConversationBlackboard> {
     super();
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async run(blackboard: ConversationBlackboard): Promise<NodeStatus> {
     blackboard.history = this.conversationStore.getHistory(
       blackboard.sessionId,

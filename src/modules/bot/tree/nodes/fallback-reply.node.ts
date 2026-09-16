@@ -17,6 +17,7 @@ export class FallbackReplyNode extends ActionNode<ConversationBlackboard> {
   readonly name = 'FallbackReply';
   private readonly logger = new Logger(FallbackReplyNode.name);
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async run(blackboard: ConversationBlackboard): Promise<NodeStatus> {
     this.logger.warn(
       `Phải dùng câu trả lời dự phòng cho session ${blackboard.sessionId} (hadSystemError=${blackboard.hadSystemError})`,
