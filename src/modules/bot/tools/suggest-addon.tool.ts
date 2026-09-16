@@ -5,6 +5,7 @@ import { ConversationBlackboard } from '../blackboard/conversation-blackboard.in
 import { resolveTeaByName } from './tea-search-helper.util';
 import { TeaCatalogCacheService } from './tea-catalog-cache.service';
 import { teaTypeToVietnamese } from './tea-type-label.util';
+import { ResponseTeaDto } from 'src/modules/tea/dto/response-tea.dto';
 
 interface SuggestAddonInput {
   /** Tên sản phẩm chính khách đang chọn mua (CHỈ điền khi không có sẵn
@@ -108,19 +109,19 @@ export class SuggestAddonTool implements IBotTool {
     }
 
     const mainTea = resolution.matches[0];
-    const pairedTypes = PAIRING_SUGGESTION[mainTea.type as TeaType] ?? [];
+    const pairedTypes = PAIRING_SUGGESTION[mainTea.type] ?? [];
     const allTeas = await this.catalogCache.getAllTeas();
 
     const addonProducts = allTeas
       .filter(
-        (t: any) =>
+        (t: ResponseTeaDto) =>
           pairedTypes.includes(t.type) &&
           t._id?.toString() !== mainTea._id?.toString() &&
           t.isAvailable &&
           t.stock > 0,
       )
       .slice(0, 4)
-      .map((t: any) => ({
+      .map((t: ResponseTeaDto) => ({
         name: t.name,
         type: teaTypeToVietnamese(t.type),
         price: t.price,
