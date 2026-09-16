@@ -18,6 +18,7 @@ export class PersistContextNode extends ActionNode<ConversationBlackboard> {
     super();
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async run(blackboard: ConversationBlackboard): Promise<NodeStatus> {
     this.conversationStore.saveHistory(
       blackboard.sessionId,

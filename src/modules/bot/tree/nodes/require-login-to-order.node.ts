@@ -18,6 +18,7 @@ export class RequireLoginToOrderNode extends ActionNode<ConversationBlackboard> 
   readonly name = 'RequireLoginToOrder';
   private readonly logger = new Logger(RequireLoginToOrderNode.name);
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async run(blackboard: ConversationBlackboard): Promise<NodeStatus> {
     this.logger.debug(
       `Khách vãng lai (session ${blackboard.sessionId}) thể hiện ý định đặt hàng ` +

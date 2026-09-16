@@ -34,6 +34,7 @@ export class AuthenticatedOrderConfirmationGuardNode extends ActionNode<Conversa
     AuthenticatedOrderConfirmationGuardNode.name,
   );
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async run(blackboard: ConversationBlackboard): Promise<NodeStatus> {
     // Node này chỉ có ý nghĩa với khách đã đăng nhập - nhánh khách vãng lai
     // đã có `GuestFakeOrderReplyGuardNode` riêng lo việc này.

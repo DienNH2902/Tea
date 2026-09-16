@@ -26,6 +26,7 @@ export class GuestFakeOrderReplyGuardNode extends ActionNode<ConversationBlackbo
   readonly name = 'GuestFakeOrderReplyGuard';
   private readonly logger = new Logger(GuestFakeOrderReplyGuardNode.name);
 
+  // eslint-disable-next-line @typescript-eslint/require-await
   async run(blackboard: ConversationBlackboard): Promise<NodeStatus> {
     // Node này chỉ có ý nghĩa với khách VÃNG LAI - khách đã đăng nhập được
     // phép đặt hàng thật nên không cần (và không được) can thiệp vào đây.
