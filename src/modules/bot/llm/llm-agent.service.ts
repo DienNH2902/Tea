@@ -86,7 +86,7 @@ export class LlmAgentService {
     const allowedToolNames = allowedTools.map((t) => t.name);
 
     for (let iteration = 0; iteration < MAX_TOOL_USE_ITERATIONS; iteration++) {
-      let response;
+      let response: OpenAI.Chat.Completions.ChatCompletion;
       try {
         response = await this.llmClient.chat.completions.create({
           model: this.model,
@@ -101,15 +101,18 @@ export class LlmAgentService {
             { role: 'system', content: systemPrompt },
             ...this.toOpenAiMessages(history),
           ],
-          tools: toolSchemas.length > 0 ? (toolSchemas as any) : undefined,
+          tools: toolSchemas.length > 0 ? toolSchemas : undefined,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Lỗi gọi API (ví dụ Groq trả 429 do vượt hạn mức free-tier trong
         // phút hiện tại, hoặc lỗi mạng) - KHÔNG để lỗi này làm sập cả
         // request của khách. Đánh dấu lỗi hệ thống để Behavior Tree tự
         // chuyển sang câu trả lời dự phòng (FallbackReplyNode).
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+
         this.logger.error(
-          `Lỗi khi gọi LLM API (có thể do vượt rate limit miễn phí, hoặc lỗi mạng): ${error?.message ?? error}`,
+          `Lỗi khi gọi LLM API (có thể do vượt rate limit miễn phí, hoặc lỗi mạng): ${errorMessage}`,
         );
         blackboard.hadSystemError = true;
         break;
@@ -212,9 +215,19 @@ export class LlmAgentService {
       // Thực thi TỪNG tool được yêu cầu, rồi đẩy kết quả (role `tool`) vào
       // lịch sử, đúng chuẩn giao thức function-calling.
       for (const toolCall of toolCalls) {
-        let parsedInput: any = {};
+        let parsedInput: Record<string, unknown> = {};
         try {
-          parsedInput = JSON.parse(toolCall.function.arguments || '{}');
+          const parsedJson: unknown = JSON.parse(
+            toolCall.function.arguments || '{}',
+          );
+
+          if (
+            parsedJson !== null &&
+            typeof parsedJson === 'object' &&
+            !Array.isArray(parsedJson)
+          ) {
+            parsedInput = parsedJson as Record<string, unknown>;
+          }
         } catch {
           // Model đôi khi trả JSON không hợp lệ (hay gặp ở model nhỏ/local
           // hơn là model thương mại lớn) - coi như tham số rỗng, để Tool tự
@@ -369,7 +382,7 @@ export class LlmAgentService {
    * Parse một JSON value có thể đang được model bọc thành string.
    * Không throw ra ngoài vì đây chỉ là lớp phục hồi output của LLM.
    */
-  private parseNestedJson(value: string): unknown | null {
+  private parseNestedJson(value: string): unknown {
     try {
       return JSON.parse(value);
     } catch {
@@ -381,7 +394,9 @@ export class LlmAgentService {
    * Chuyển đổi mảng `AgentMessage` (kiểu nội bộ của module bot) sang đúng
    * định dạng `messages` mà OpenAI SDK/Ollama yêu cầu khi gọi API.
    */
-  private toOpenAiMessages(history: AgentMessage[]): any[] {
+  private toOpenAiMessages(
+    history: AgentMessage[],
+  ): OpenAI.Chat.Completions.ChatCompletionMessageParam[] {
     return history.map((msg) => {
       if (msg.role === 'assistant') {
         return {
