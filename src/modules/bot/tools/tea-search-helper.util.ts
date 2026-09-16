@@ -264,7 +264,10 @@ export async function resolveTeaByName(
 
   // TẦNG 1 (ưu tiên cao nhất): dùng THẲNG câu gốc khách gõ, không qua model
   if (allowRawMessageMatch) {
-    const containedMatches = findNamesContainedInText(rawUserMessage, allTeas);
+    const containedMatches = findNamesContainedInText(
+      rawUserMessage,
+      allTeas as ResponseTeaDto[],
+    );
     if (containedMatches.length > 0) {
       return { matchType: 'from_user_message', matches: containedMatches };
     }
@@ -279,7 +282,7 @@ export async function resolveTeaByName(
       ),
     );
     if (exactMatches.length > 0) {
-      return { matchType: 'exact', matches: exactMatches };
+      return { matchType: 'exact', matches: exactMatches as ResponseTeaDto[] };
     }
 
     // TẦNG 3: tìm mờ trên chuỗi model cung cấp
