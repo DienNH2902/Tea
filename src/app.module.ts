@@ -12,6 +12,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from 'node_modules/@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { join } from 'path';
 import { BotModule } from './modules/bot/bot.module';
+import { PaymentModule } from './modules/payment/payment.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { BotModule } from './modules/bot/bot.module';
 
       inject: [ConfigService],
     }),
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

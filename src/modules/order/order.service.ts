@@ -4,7 +4,6 @@ import {
   BadRequestException,
   NotFoundException,
   ForbiddenException,
-  Inject,
 } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { TeaService } from '../tea/tea.service';
@@ -18,17 +17,15 @@ import { plainToInstance } from 'class-transformer';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { MailService } from '../mail/mail.service';
 import { UsersService } from '../users/users.service';
-interface PayOSWebhookData {
-  orderCode: number;
-  amount: number;
-  description: string;
-  status: string;
-  // ... thêm các trường khác nếu cần
+import { VnPayService } from '../payment/vnpay.service';
+import { OrderDocument } from './schemas/order.schema';
+
+interface VnPayCallbackResponse {
+  success: boolean;
+  message: string;
+  amount?: number;
 }
-interface PayOSClient {
-  createPaymentLink(data: any): Promise<{ checkoutUrl: string }>;
-  verifyPaymentWebhookData(body: any): PayOSWebhookData;
-}
+
 @Injectable()
 export class OrdersService {
   constructor(
@@ -36,8 +33,7 @@ export class OrdersService {
     private readonly teaService: TeaService,
     private readonly mailService: MailService,
     private readonly userService: UsersService,
-    // Inject với Token 'PAYOS_CLIENT' và dùng kiểu any hoặc PayOS
-    @Inject('PAYOS_CLIENT') private readonly payos: PayOSClient,
+    private readonly vnPayService: VnPayService,
   ) {}
 
   async create(
@@ -126,9 +122,16 @@ export class OrdersService {
     return this.toResponseDto(order);
   }
 
-  async createOrderWithQR(
+  /**
+   * Tạo đơn hàng và trả về link thanh toán VNPay (thay thế cho PayOS trước đây).
+   * Giữ nguyên toàn bộ logic tạo đơn / trừ kho / gửi mail như bản PayOS cũ,
+   * chỉ thay phần sinh link thanh toán từ PayOS sang VNPay.
+   */
+  async createOrderWithVnpay(
     userId: string,
     createOrderDto: CreateOrderDto,
+    ipAddr: string,
+    bankCode?: string,
   ): Promise<any> {
     const { items, shippingAddress, phoneNumber, note } = createOrderDto;
     let totalPrice = 0;
@@ -182,134 +185,119 @@ export class OrdersService {
       status: OrderStatus.PENDING,
     });
 
-    // 1. Tạo orderCode cho PayOS (phải là số và không trùng)
-    const orderCode = Number(Date.now().toString().slice(-6));
+    const orderId = (order as OrderDocument)._id.toString();
 
-    // 2. Tạo link thanh toán 2.000đ (Fix cứng để demo)
+    // Nhúng orderId + số tiền gốc vào vnp_TxnRef để đối chiếu khi VNPay
+    // gọi callback về, giống cách bảo mật đã dùng ở dự án cũ (referenceId
+    // chứa amount gốc để tránh bị giả mạo số tiền).
+    const referenceId = `${orderId}_${totalPrice}_${Date.now()}`;
+
     try {
-      const paymentData = {
-        orderCode: orderCode,
-        amount: 2000, // SỐ TIỀN THỰC TẾ KHÁCH QUÉT QR
-        description: `Thanh toan don hang #${orderCode}`,
-        items: orderItems.map((item) => ({
-          name: item.name, // Khớp với productName trong template mail nếu cần
-          quantity: item.quantity,
-          price: item.price,
-        })),
-        returnUrl: `http://localhost:3000/success`, // Link khi khách trả xong
-        cancelUrl: `http://localhost:3000/cancel`,
-      };
+      const paymentUrl = this.vnPayService.createPaymentUrl(
+        referenceId,
+        totalPrice,
+        ipAddr,
+        bankCode,
+      );
 
-      const paymentLink = (await this.payos.createPaymentLink(paymentData)) as {
-        checkoutUrl: string;
-      };
+      // Gửi mail xác nhận đơn ngay (gửi ngầm để không chậm API), giữ nguyên
+      // hành vi như bản PayOS cũ.
+      // const user = await this.userService.findOne(userId);
 
-      // 2. Sau khi lưu thành công, gửi mail ngay (gửi ngầm để không chậm API)
-      const user = await this.userService.findOne(userId);
+      // if (user) {
+      //   this.mailService
+      //     .sendMail(
+      //       user.email,
+      //       `Xác nhận đơn hàng #${orderId.toUpperCase()}`,
+      //       'order-success',
+      //       {
+      //         name: user.name || 'Khách hàng',
+      //         orderId,
+      //         items: orderItems,
+      //         totalPrice: totalPrice.toLocaleString(),
+      //         shippingAddress,
+      //         phoneNumber,
+      //         note: note || 'Không có ghi chú',
+      //       },
+      //     )
+      //     .catch((err) => console.error('Gửi mail hóa đơn thất bại:', err));
+      // }
 
-      if (user) {
-        this.mailService
-          .sendMail(
-            user.email, // TypeScript sẽ hiểu user.email tồn tại ở đây
-            `Xác nhận đơn hàng #${(order as any)._id.toString().toUpperCase()}`,
-            'order-success',
-            {
-              name: user.name || 'Khách hàng',
-              orderId: (order as any)._id.toString(),
-              items: orderItems,
-              totalPrice: totalPrice.toLocaleString(),
-              shippingAddress,
-              phoneNumber,
-              note: note || 'Không có ghi chú',
-            },
-          )
-          .catch((err) => console.error('Gửi mail hóa đơn thất bại:', err));
-      }
       return {
         ...this.toResponseDto(order),
-        checkoutUrl: paymentLink.checkoutUrl,
+        paymentUrl,
       };
     } catch (error) {
-      console.error('Lỗi PayOS:', error);
+      console.error('Lỗi VNPay:', error);
       throw new BadRequestException('Không thể tạo link thanh toán');
     }
-
-    // return this.toResponseDto(order);
   }
 
-  // async handleWebhook(body: unknown) {
-  //   // 1. Xác thực dữ liệu từ PayOS (hết lỗi Unsafe call)
-  //   const webhookData: PayOSWebhookData =
-  //     this.payos.verifyPaymentWebhookData(body);
-
-  //   if (webhookData.description.includes('Thanh toan don hang')) {
-  //     const orderCode = webhookData.orderCode;
-
-  //     // Tìm đơn hàng bằng orderCode (Ép kiểu filter để khớp với repository)
-  //     const order = await this.orderRepository.findOne({ orderCode } as any);
-
-  //     if (order && order.status === OrderStatus.PENDING) {
-  //       // Cập nhật trạng thái thành PAID
-  //       // Sử dụng (order as any)._id nếu Order type của Điền chưa có trường _id
-  //       await this.orderRepository.updateOrderStatusById(
-  //         (order as any)._id.toString(),
-  //         OrderStatus.PAID,
-  //       );
-
-  //       // Gửi mail thông báo thành công
-  //       const user = await this.userService.findOne(order.userId.toString());
-  //       if (user) {
-  //         await this.mailService.sendMail(
-  //           user.email,
-  //           'Thanh toán thành công',
-  //           'order-success',
-  //           {
-  //             name: user.name,
-  //             orderId: (order as any)._id.toString(),
-  //             totalPrice: order.totalPrice.toLocaleString(),
-  //             items: order.items,
-  //           },
-  //         );
-  //       }
-  //     }
-  //   }
-  //   return { success: true };
-  // }
-
-  async handleWebhook(body: unknown) {
-    const webhookData: PayOSWebhookData =
-      this.payos.verifyPaymentWebhookData(body);
-
-    if (webhookData.description.includes('Thanh toan don hang')) {
-      const orderCode = webhookData.orderCode;
-      const order = await this.orderRepository.findOne({ orderCode } as any);
-
-      if (order && order.status === OrderStatus.PENDING) {
-        // 1. Cập nhật trạng thái thành PAID
-        await this.orderRepository.updateOrderStatusById(
-          (order as any)._id.toString(),
-          OrderStatus.PAID,
-        );
-
-        // 2. TÌM USER ĐỂ LẤY EMAIL (Đây là lúc thích hợp nhất để gửi mail)
-        const user = await this.userService.findOne(order.userId.toString());
-        if (user) {
-          await this.mailService.sendMail(
-            user.email,
-            `Hóa đơn thanh toán thành công cho đơn hàng #${orderCode}`,
-            'order-success', // Template hóa đơn thành công
-            {
-              name: user.name,
-              orderId: (order as any)._id.toString(),
-              totalPrice: order.totalPrice.toLocaleString(),
-              items: order.items,
-              status: 'Đã thanh toán (PayOS)',
-            },
-          );
-        }
-      }
+  /**
+   * Xử lý callback VNPay trả về (thay thế cho handleWebhook của PayOS).
+   */
+  async processVnPayCallback(
+    query: Record<string, string>,
+  ): Promise<VnPayCallbackResponse> {
+    const result = this.vnPayService.verifyCallback(query);
+    if (!result.isValid) {
+      throw new BadRequestException('Chữ ký không hợp lệ');
     }
-    return { success: true };
+
+    const { txnRef, responseCode, amount: callbackAmount } = result;
+
+    // Bóc tách referenceId để lấy orderId và originalAmount
+    const parts = txnRef.split('_');
+    const orderId = parts[0];
+    const originalAmount = parseInt(parts[1] || '0', 10);
+
+    // Đối chiếu số tiền trả về từ VNPay với số tiền gốc lúc khởi tạo
+    if (callbackAmount !== originalAmount) {
+      throw new BadRequestException(
+        'Số tiền thanh toán không khớp với yêu cầu khởi tạo',
+      );
+    }
+
+    const order = await this.orderRepository.findOne(orderId);
+    if (!order) {
+      throw new NotFoundException(`Không tìm thấy đơn hàng với ID ${orderId}`);
+    }
+
+    // Idempotency: nếu đơn không còn ở trạng thái PENDING thì đã xử lý trước đó
+    if (order.status !== OrderStatus.PENDING) {
+      return { success: true, message: 'Giao dịch đã được xử lý trước đó' };
+    }
+
+    if (responseCode === '00') {
+      await this.orderRepository.updateOrderStatusById(
+        orderId,
+        OrderStatus.PAID,
+      );
+
+      const user = await this.userService.findOne(order.userId.toString());
+      if (user) {
+        await this.mailService.sendMail(
+          user.email,
+          `Hóa đơn thanh toán thành công cho đơn hàng #${orderId}`,
+          'order-success',
+          {
+            name: user.name,
+            orderId,
+            totalPrice: order.totalPrice.toLocaleString(),
+            items: order.items,
+            status: 'Đã thanh toán (VNPay)',
+          },
+        );
+      }
+
+      return {
+        success: true,
+        message: 'Thanh toán thành công',
+        amount: callbackAmount,
+      };
+    }
+
+    return { success: false, message: 'Giao dịch thất bại hoặc bị hủy' };
   }
 
   async getAllOrdersByUserId(userId: string): Promise<ResponseOrderDto[]> {

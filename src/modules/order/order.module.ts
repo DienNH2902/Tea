@@ -8,7 +8,7 @@ import { OrdersRepository } from './order.repository';
 import { TeaModule } from '../tea/tea.module';
 import { MailModule } from '../mail/mail.module';
 import { UsersModule } from '../users/users.module';
-import { PayOSProvider } from '../PayOS/payos.provider';
+import { PaymentModule } from '../payment/payment.module';
 
 @Module({
   imports: [
@@ -16,9 +16,10 @@ import { PayOSProvider } from '../PayOS/payos.provider';
     TeaModule,
     MailModule,
     UsersModule,
+    PaymentModule,
   ],
   controllers: [OrderController],
-  providers: [OrdersService, OrdersRepository, PayOSProvider],
+  providers: [OrdersService, OrdersRepository],
   exports: [OrdersService, OrdersRepository],
 })
 export class OrderModule {}
