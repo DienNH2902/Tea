@@ -7,7 +7,6 @@ import * as bcrypt from 'bcrypt';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
-import { ResponseUserDto } from '../users/dto/response-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -66,10 +65,10 @@ export class AuthService {
 
     return {
       access_token: await this.jwtService.signAsync(payload),
-      user: new ResponseUserDto(user),
-      refresh_token: await this.jwtService.signAsync(payload, {
-        expiresIn: '7d',
-      }),
+      // user: new ResponseUserDto(user),
+      // refresh_token: await this.jwtService.signAsync(payload, {
+      //   expiresIn: '7d',
+      // }),
     };
   }
 }
