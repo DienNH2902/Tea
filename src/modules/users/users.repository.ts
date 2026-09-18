@@ -57,6 +57,24 @@ export class UsersRepository {
       .exec();
   }
 
+  /**
+   * Trừ tiền trong ví nội bộ của user một cách nguyên tử (atomic).
+   * Điều kiện `balance: { $gte: amount }` nằm ngay trong query filter nên
+   * Mongo sẽ tự kiểm tra đủ tiền rồi mới trừ trong cùng 1 thao tác — tránh
+   * race condition khi nhiều request trừ tiền cùng lúc.
+   * Trả về `null` nếu không đủ số dư (hoặc không tìm thấy user).
+   */
+  async deductBalance(userId: string, amount: number): Promise<User | null> {
+    return (await this.userModel
+      .findOneAndUpdate(
+        { _id: userId, balance: { $gte: amount } },
+        { $inc: { balance: -amount } },
+        { returnDocument: 'after' },
+      )
+      .lean()
+      .exec()) as unknown as User | null;
+  }
+
   async delete(id: string): Promise<User | null> {
     return this.userModel.findByIdAndDelete(id).exec();
   }

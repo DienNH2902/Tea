@@ -33,6 +33,10 @@ export class ResponseUserDto {
   address: string;
 
   @Expose()
+  @ApiProperty({ example: 500000, description: 'Số dư ví hiện tại' })
+  balance: number;
+
+  @Expose()
   @ApiProperty({ example: false })
   isRegular: boolean;
 

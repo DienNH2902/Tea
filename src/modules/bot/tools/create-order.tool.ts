@@ -116,6 +116,10 @@ export class CreateOrderTool implements IBotTool {
    * không có `.length`, nên `length === 0` là `false`, guard bị bỏ qua),
    * khiến `input.items.map(...)` NÉM LỖI TypeError và crash luôn request.
    *
+   * LỖI THỰC TẾ KHÁC (khách nói thẳng tên trà mà vẫn không nhận ra được
+   * sản phẩm): model đôi khi gửi `items` dưới dạng 1 CHUỖI JSON đã encode
+   * thay vì 1 MẢNG thật (xem chi tiết ngay trong thân hàm bên dưới).
+   *
    * Hàm này KHÔNG BAO GIỜ ném lỗi - luôn trả về 1 cấu trúc AN TOÀN để dùng
    * tiếp, "sửa" các lỗi hình dạng dữ liệu thường gặp (object đơn lẻ thay
    * vì mảng 1 phần tử, quantity dạng chuỗi số...). Nếu dữ liệu thực sự
@@ -128,26 +132,35 @@ export class CreateOrderTool implements IBotTool {
     }
 
     const obj = rawInput as Record<string, unknown>;
-    const rawItems = obj.items;
+    let rawItems = obj.items;
 
-    // Model nhỏ/local đôi khi serialize mảng `items` thành STRING JSON:
-    //   "items": "[{\"teaName\":\"west lake\",\"quantity\":2}]"
-    // Trong trường hợp này phải parse thêm 1 lớp trước khi xử lý.
-    let normalizedRawItems: unknown = rawItems;
+    // LỖI THỰC TẾ ĐÃ XẢY RA (khiến "west lake" - dù khách nói thẳng tên
+    // trà ngay trong tin nhắn đặt hàng - vẫn không nhận diện được sản
+    // phẩm): model đôi khi gửi `items` dưới dạng 1 CHUỖI chứa JSON đã
+    // encode (ví dụ `"[{\"teaName\":\"west lake\",\"quantity\":3}]"`)
+    // thay vì 1 MẢNG THẬT SỰ, dù lệnh gọi tool lần này đi ĐÚNG qua cơ chế
+    // function-calling (khác với lỗi "viết chui" JSON ra hẳn văn bản đã
+    // xử lý ở LlmAgentService). Trước đây, nhánh `else` bên dưới coi chuỗi
+    // này là "không dùng được" -> rơi về `rawItemsArray = []` -> tool trả
+    // `missing_info`/không tìm ra item nào, dù khách đã nói rõ tên trà.
+    // Nên ở đây, nếu `rawItems` là chuỗi, THỬ `JSON.parse()` nó trước, rồi
+    // mới rơi xuống các nhánh xử lý CŨ (array thật / object đơn lẻ / rỗng)
+    // như bình thường.
     if (typeof rawItems === 'string') {
       try {
-        normalizedRawItems = JSON.parse(rawItems);
+        rawItems = JSON.parse(rawItems);
       } catch {
-        normalizedRawItems = null;
+        // Không parse được -> giữ nguyên `rawItems` dạng chuỗi, các nhánh
+        // bên dưới sẽ tự rơi về `rawItemsArray = []` như cũ (an toàn).
       }
     }
 
     let rawItemsArray: unknown[];
-    if (Array.isArray(normalizedRawItems)) {
-      rawItemsArray = normalizedRawItems;
-    } else if (normalizedRawItems && typeof normalizedRawItems === 'object') {
+    if (Array.isArray(rawItems)) {
+      rawItemsArray = rawItems;
+    } else if (rawItems && typeof rawItems === 'object') {
       // Model gửi 1 sản phẩm dưới dạng OBJECT thay vì MẢNG 1 phần tử.
-      rawItemsArray = [normalizedRawItems];
+      rawItemsArray = [rawItems];
     } else {
       rawItemsArray = [];
     }
@@ -180,50 +193,6 @@ export class CreateOrderTool implements IBotTool {
         typeof obj.phoneNumber === 'string' ? obj.phoneNumber : undefined,
       note: typeof obj.note === 'string' ? obj.note : undefined,
     };
-  }
-
-  /**
-   * Lấy số lượng rõ ràng từ câu gốc khách gõ, chỉ dùng khi model đã tạo
-   * nhiều item nhưng tất cả cùng trỏ về đúng 1 sản phẩm. Đây là lớp bảo vệ
-   * chống lỗi model kiểu "2 west lake" -> [{quantity:2},{quantity:2}].
-   */
-  private extractQuantityFromUserMessage(
-    userMessage: string,
-    tea: ResponseTeaDto,
-  ): number | null {
-    const normalize = (value: string) =>
-      value
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/đ/gi, 'd')
-        .toLowerCase()
-        .replace(/\s+/g, ' ')
-        .trim();
-
-    const normalizedMessage = normalize(userMessage);
-    const names = [tea.name, tea.nameEn]
-      .filter((name): name is string => !!name?.trim())
-      .map(normalize)
-      .sort((a, b) => b.length - a.length);
-
-    for (const name of names) {
-      const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const match = normalizedMessage.match(
-        new RegExp(
-          `\\b(\\d+(?:[.,]\\d+)?)\\s*(?:goi|hop|tui|chai|kg|gram|g)?\\s*${escapedName}\\b`,
-          'i',
-        ),
-      );
-
-      if (match) {
-        const quantity = Number(match[1].replace(',', '.'));
-        if (Number.isFinite(quantity) && quantity > 0) {
-          return quantity;
-        }
-      }
-    }
-
-    return null;
   }
 
   async execute(
@@ -338,35 +307,6 @@ export class CreateOrderTool implements IBotTool {
       }
     });
 
-    // Nếu model vô tình lặp cùng một sản phẩm thành nhiều item, không để
-    // lỗi format của model làm số lượng bị nhân lên. Khi câu gốc của khách
-    // có một số lượng rõ ràng cho đúng sản phẩm đó, ưu tiên số lượng từ
-    // câu gốc (nguồn đáng tin cậy hơn output của model).
-    if (resolvedItems.length > 1) {
-      const distinctTeaIds = new Set(resolvedItems.map((item) => item.teaId));
-
-      if (distinctTeaIds.size === 1) {
-        const teaId = resolvedItems[0].teaId;
-        const resolvedTea = perItemResolutions
-          .flatMap((resolution) => resolution.matches)
-          .find((tea) => tea._id === teaId);
-
-        const requestedQuantity = resolvedTea
-          ? this.extractQuantityFromUserMessage(
-              blackboard.userMessage,
-              resolvedTea,
-            )
-          : null;
-
-        if (requestedQuantity !== null) {
-          resolvedItems.splice(0, resolvedItems.length, {
-            teaId,
-            quantity: requestedQuantity,
-          });
-        }
-      }
-    }
-
     if (notFoundItems.length > 0 || ambiguousItems.length > 0) {
       return {
         data: {
@@ -380,11 +320,44 @@ export class CreateOrderTool implements IBotTool {
       };
     }
 
+    // LỖI THỰC TẾ ĐÃ XẢY RA: model đôi khi "tách" 1 sản phẩm thành NHIỀU
+    // phần tử TRÙNG TÊN trong "items" (ví dụ "3 west lake" bị tách thành
+    // {quantity:3} và {quantity:1}, cả 2 đều trỏ về CÙNG 1 teaId) dù tool
+    // description đã dặn không được làm vậy.
+    //
+    // SỬA LẦN 1 (SAI): gộp bằng cách CỘNG DỒN quantity (3 + 1 = 4) - tưởng
+    // là đã gộp xong nhưng thực chất vẫn tính SAI tổng, vì phần tử thứ 2
+    // KHÔNG PHẢI khách thực sự muốn mua thêm - nó là DỮ LIỆU BỊA THÊM của
+    // model (khách chỉ nói "3 west lake" DUY NHẤT 1 lần, không hề có ý
+    // "mua thêm 1 gói nữa"). Cộng dồn 2 con số vốn cùng đại diện cho 1 lần
+    // đặt hàng duy nhất là sai bản chất, dù gộp được thành 1 dòng hiển thị.
+    //
+    // SỬA LẦN 2 (ĐÚNG): lấy quantity LỚN NHẤT trong các phần tử trùng
+    // teaId, KHÔNG cộng dồn. Vì các phần tử trùng teaId trong CÙNG 1 lượt
+    // gọi tool luôn xuất phát từ lỗi model tự nhân bản/tách 1 dòng duy
+    // nhất (không phải 2 lần đặt hàng độc lập của khách), số lượng LỚN
+    // NHẤT trong số đó luôn là con số khách thực sự đã nói (ví dụ model
+    // tách "3" thành "3" và "1" - số "3" mới là số khách nói, số "1" là
+    // rác) - dùng max() phản ánh đúng ý khách hơn cộng dồn.
+    const mergedItemsByTeaId = new Map<
+      string,
+      { teaId: string; quantity: number }
+    >();
+    for (const item of resolvedItems) {
+      const existing = mergedItemsByTeaId.get(item.teaId);
+      if (existing) {
+        existing.quantity = Math.max(existing.quantity, item.quantity);
+      } else {
+        mergedItemsByTeaId.set(item.teaId, { ...item });
+      }
+    }
+    const mergedItems = Array.from(mergedItemsByTeaId.values());
+
     try {
       const order = await this.ordersService.create(
         blackboard.userId,
         {
-          items: resolvedItems,
+          items: mergedItems,
           shippingAddress: input.shippingAddress as string,
           phoneNumber: input.phoneNumber as string,
           note: input.note,

@@ -126,6 +126,35 @@ const FAKE_ORDER_CONFIRMATION_PHRASES: readonly string[] = [
   'don hang se duoc giao',
 ];
 
+// LỖI THỰC TẾ ĐÃ XẢY RA (false positive): model trả lời HOÀN TOÀN ĐÚNG và
+// hữu ích khi đơn hàng THẤT BẠI vì lý do hợp lệ (ví dụ hết tiền trong ví),
+// dùng câu kiểu "...CHƯA THỂ được tạo... ĐỂ đặt hàng THÀNH CÔNG, bạn cần
+// nạp thêm tiền...". Cụm "dat hang thanh cong" ở trên vẫn khớp chuỗi con
+// bên trong câu ĐIỀU KIỆN này ("để đặt hàng thành công, bạn cần...") dù nó
+// hoàn toàn KHÔNG phải lời khẳng định đã đặt hàng xong - khiến câu trả lời
+// đúng/hữu ích bị ghi đè oan thành câu chung chung vô nghĩa. Vì vậy, nếu
+// câu trả lời đã tự nói RÕ là THẤT BẠI/CHƯA xong (chứa 1 trong các cụm phủ
+// định dưới đây), tuyệt đối KHÔNG được coi là "bịa xác nhận thành công",
+// bất kể phía sau có vô tình chứa cụm từ trùng khớp ở danh sách trên hay
+// không - kiểm tra danh sách phủ định này TRƯỚC, ưu tiên tuyệt đối.
+const FAILURE_INDICATOR_PHRASES: readonly string[] = [
+  'chua the duoc tao',
+  'chua duoc tao thanh cong',
+  'chua tao thanh cong',
+  'chua thanh cong',
+  'chua duoc tao',
+  'chua tao duoc',
+  'khong the tao',
+  'khong tao duoc',
+  'khong thanh cong',
+  'that bai',
+  'loi he thong',
+  'khong du', // "không đủ" (số dư ví/tồn kho không đủ)
+  'de dat hang thanh cong', // câu điều kiện: "để đặt hàng thành công, bạn cần..."
+  'de tao don thanh cong',
+  'de don hang thanh cong',
+];
+
 /**
  * Trả về true nếu văn bản trả lời của BOT có dấu hiệu "bịa" ra 1 xác nhận
  * đơn hàng (chỉ nên gọi hàm này SAU KHI đã xác nhận `toolCallLog` không có
@@ -134,6 +163,14 @@ const FAKE_ORDER_CONFIRMATION_PHRASES: readonly string[] = [
 export function looksLikeFakeOrderConfirmation(replyText: string): boolean {
   if (!replyText) return false;
   const normalized = stripDiacritics(replyText);
+
+  // Lưới lọc TRƯỚC: câu trả lời đã tự nói rõ là thất bại/chưa xong thì
+  // không bao giờ bị coi là "bịa xác nhận thành công" (xem giải thích ở
+  // `FAILURE_INDICATOR_PHRASES` phía trên).
+  if (FAILURE_INDICATOR_PHRASES.some((phrase) => normalized.includes(phrase))) {
+    return false;
+  }
+
   return FAKE_ORDER_CONFIRMATION_PHRASES.some((phrase) =>
     normalized.includes(phrase),
   );

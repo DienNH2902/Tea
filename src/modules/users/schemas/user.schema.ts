@@ -41,6 +41,9 @@ export class User {
   @Prop({ type: String, required: true })
   address: string;
 
+  @Prop({ type: Number, default: 0, min: 0 })
+  balance: number;
+
   @Prop({ type: Boolean, default: false })
   isRegular: boolean;
 }

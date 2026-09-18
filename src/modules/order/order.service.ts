@@ -48,7 +48,9 @@ export class OrdersService {
     let totalPrice = 0;
     const orderItems: OrderItem[] = [];
 
-    // Duyệt qua từng món trà khách đặt
+    // Bước 1: Duyệt qua từng món trà khách đặt để kiểm tra tồn kho + tính
+    // tổng tiền. CHƯA trừ kho ở bước này — chỉ trừ kho sau khi đã chắc
+    // chắn user đủ tiền, tránh trừ kho nhầm rồi phải hoàn lại khi hết tiền.
     for (const item of items) {
       // 1. Tìm thông tin trà
       const tea = await this.teaService.findOne(item.teaId);
@@ -79,13 +81,22 @@ export class OrdersService {
         quantity: item.quantity,
         price: tea.price,
       });
+    }
 
-      // 5. Cập nhật tồn kho (Trừ kho)
+    // Bước 2: Kiểm tra & trừ số dư ví trước khi chốt đơn — áp dụng cho cả
+    // 2 kênh (khách tự đặt trên web và bot tạo giúp), vì cả 2 đều gọi
+    // chung hàm create() này. Nếu không đủ tiền, deductBalance sẽ ném
+    // BadRequestException("Số dư trong ví không đủ...") và dừng ngay tại
+    // đây — kho hàng chưa hề bị đụng tới.
+    await this.userService.deductBalance(userId, totalPrice);
+
+    // Bước 3: Số dư đã đủ và đã bị trừ, giờ mới trừ kho.
+    for (const item of items) {
       // Hàm updateStock trong TeaService bạn vừa cập nhật sẽ lo việc check isAvailable
       await this.teaService.updateStock(item.teaId, -item.quantity);
     }
 
-    // 6. Tạo đơn hàng hoàn chỉnh
+    // Bước 4: Tạo đơn hàng hoàn chỉnh
     const order = await this.orderRepository.create({
       userId: new Types.ObjectId(userId) as unknown as Types.ObjectId,
       items: orderItems,

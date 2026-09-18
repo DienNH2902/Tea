@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -128,6 +129,29 @@ export class UsersService {
     await this.usersRepository.updatePassword(userId, hashedNewPassword);
 
     return { message: 'Đổi mật khẩu thành công' };
+  }
+
+  /**
+   * Kiểm tra và trừ tiền trong ví nội bộ của user. Dùng cho luồng thanh
+   * toán đơn hàng bằng số dư (áp dụng cho cả đơn tự đặt lẫn đơn do bot tạo).
+   *
+   * Nếu không đủ tiền, message lỗi nêu rõ CẢ tổng tiền đơn hàng LẪN số dư
+   * hiện có của khách, để khách biết chính xác đang thiếu bao nhiêu (bot
+   * chỉ việc trả nguyên `error.message` này lại cho khách - xem
+   * `create-order.tool.ts`, nhánh catch BadRequestException).
+   */
+  async deductBalance(userId: string, amount: number): Promise<void> {
+    const updated = await this.usersRepository.deductBalance(userId, amount);
+    if (!updated) {
+      const currentUser = await this.usersRepository.findOne({ _id: userId });
+      const currentBalance = currentUser?.balance ?? 0;
+
+      throw new BadRequestException(
+        `Số dư trong ví không đủ để thanh toán đơn hàng này. ` +
+          `Tổng tiền đơn hàng: ${amount.toLocaleString('vi-VN')}đ, ` +
+          `số dư hiện tại của bạn: ${currentBalance.toLocaleString('vi-VN')}đ.`,
+      );
+    }
   }
 
   async remove(id: string): Promise<void> {
