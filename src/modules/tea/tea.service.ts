@@ -11,6 +11,7 @@ import { ResponseTeaDto } from './dto/response-tea.dto';
 import { TeaRepository } from './tea.repository';
 import { SortTeaByPrice } from 'src/constants/teaSortByPrice-type.enum';
 import { PaginatedResult } from 'src/interface/pagination.interface';
+import { TeaAvailabilityFilter } from 'src/constants/sortAvailableEnum.enum';
 
 @Injectable()
 export class TeaService {
@@ -59,6 +60,18 @@ export class TeaService {
 
     if (!sortedTeas || sortedTeas.length === 0) {
       throw new NotFoundException(`Cannot sort with type: ${choose}`);
+    }
+
+    return sortedTeas.map((tea) => this.toResponseDto(tea));
+  }
+
+  async sortAvailableTea(
+    status?: TeaAvailabilityFilter,
+  ): Promise<ResponseTeaDto[] | null> {
+    const sortedTeas = await this.teaRepository.sortAvailableTea(status);
+
+    if (!sortedTeas || sortedTeas.length === 0) {
+      throw new NotFoundException(`Cannot sort with type: ${status}`);
     }
 
     return sortedTeas.map((tea) => this.toResponseDto(tea));

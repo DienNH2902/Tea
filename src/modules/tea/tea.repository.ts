@@ -4,6 +4,7 @@ import { Model, QueryFilter, UpdateQuery } from 'mongoose';
 import { Tea } from './schemas/tea.schema';
 import { SortTeaByPrice } from 'src/constants/teaSortByPrice-type.enum';
 import { Order } from '../order/schemas/order.schema';
+import { TeaAvailabilityFilter } from 'src/constants/sortAvailableEnum.enum';
 
 @Injectable()
 export class TeaRepository {
@@ -29,7 +30,13 @@ export class TeaRepository {
 
     // Chạy song song cả 2 lệnh để tối ưu tốc độ
     const [data, total] = await Promise.all([
-      this.teaModel.find().skip(skip).limit(limit).lean().exec(),
+      this.teaModel
+        .find()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
       this.teaModel.countDocuments().exec(),
     ]);
 
@@ -39,6 +46,7 @@ export class TeaRepository {
   async findByTeaType(teaType: string): Promise<Tea[] | null> {
     return (await this.teaModel
       .find({ type: teaType })
+      .sort({ createdAt: -1 })
       .lean()
       .exec()) as unknown as Tea[] | null;
   }
@@ -55,6 +63,7 @@ export class TeaRepository {
           },
         ],
       })
+      .sort({ createdAt: -1 })
       .lean()
       .exec();
   }
@@ -63,6 +72,23 @@ export class TeaRepository {
     return await this.teaModel
       .find()
       .sort({ price: chooseOrder })
+      .lean()
+      .exec();
+  }
+
+  async sortAvailableTea(status?: TeaAvailabilityFilter): Promise<Tea[]> {
+    const filterQuery: QueryFilter<Tea> = {};
+
+    if (status === TeaAvailabilityFilter.AVAILABLE) {
+      filterQuery.isAvailable = true;
+    } else if (status === TeaAvailabilityFilter.OUT_OF_STOCK) {
+      filterQuery.isAvailable = false;
+    }
+    // Nếu status === TeaAvailabilityFilter.ALL thì filterQuery = {} (lấy tất cả)
+
+    return await this.teaModel
+      .find(filterQuery)
+      .sort({ createdAt: -1 }) // Sắp xếp theo ngày tạo mới nhất (hoặc trường bạn muốn)
       .lean()
       .exec();
   }

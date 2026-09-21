@@ -30,6 +30,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { RoleEnum } from 'src/constants/roleEnum.enum';
 import { PaginatedResult } from 'src/interface/pagination.interface';
+import { TeaAvailabilityFilter } from 'src/constants/sortAvailableEnum.enum';
 
 @ApiTags('tea')
 @ApiBearerAuth()
@@ -81,6 +82,13 @@ export class TeaController {
   ): Promise<ResponseTeaDto[] | null> {
     const tea = await this.teaService.findByTeaName(teaName);
     return tea ? tea : null;
+  }
+
+  @Get('available')
+  @ApiQuery({ name: 'status', required: true, enum: TeaAvailabilityFilter })
+  @ApiOperation({ summary: 'Sort available teas' })
+  async getTeasByAvailability(@Query('status') status?: TeaAvailabilityFilter) {
+    return await this.teaService.sortAvailableTea(status);
   }
 
   // @Get('sortTeaByPrice')
