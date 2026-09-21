@@ -17,6 +17,34 @@ export class OrdersRepository {
     return newOrder.save();
   }
 
+  /**
+   * Lấy TOÀN BỘ đơn hàng (mọi khách hàng), có phân trang - dùng cho trang
+   * admin "Quản lý đơn hàng". Trước đây chưa tồn tại (chỉ có "đơn của
+   * tôi" và "đơn theo 1 userId cụ thể") - bổ sung theo ĐÚNG khuôn mẫu
+   * phân trang đã dùng ở `TeaRepository.findAll()` để nhất quán toàn hệ
+   * thống.
+   */
+  async findAllPaginated(
+    page: number,
+    limit: number,
+  ): Promise<{ data: Order[]; total: number }> {
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.orderModel
+        .find()
+        .populate('userId')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
+      this.orderModel.countDocuments().exec(),
+    ]);
+
+    return { data, total };
+  }
+
   async findAllByUserId(userId: string): Promise<Order[]> {
     return this.orderModel
       .find({ userId: new Types.ObjectId(userId) })

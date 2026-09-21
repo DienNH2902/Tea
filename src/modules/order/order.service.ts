@@ -19,6 +19,7 @@ import { MailService } from '../mail/mail.service';
 import { UsersService } from '../users/users.service';
 import { VnPayService } from '../payment/vnpay.service';
 import { OrderDocument } from './schemas/order.schema';
+import { PaginatedResult } from 'src/interface/pagination.interface';
 
 interface VnPayCallbackResponse {
   success: boolean;
@@ -309,6 +310,30 @@ export class OrdersService {
     }
 
     return { success: false, message: 'Giao dịch thất bại hoặc bị hủy' };
+  }
+
+  /**
+   * Lấy TOÀN BỘ đơn hàng (mọi khách hàng), có phân trang - phục vụ trang
+   * admin "Quản lý đơn hàng" ở frontend. Trả về đúng hình dạng
+   * `PaginatedResult<T>` giống hệt `TeaService.findAll()` để component
+   * phân trang dùng chung ở frontend hoạt động nhất quán trên mọi trang.
+   */
+  async findAllPaginated(
+    page: number,
+    limit: number,
+  ): Promise<PaginatedResult<ResponseOrderDto>> {
+    const { data, total } = await this.orderRepository.findAllPaginated(
+      page,
+      limit,
+    );
+
+    return {
+      data: data.map((order) => this.toResponseDto(order)),
+      totalItems: total,
+      pageSize: limit,
+      pageNumber: page,
+      totalPages: Math.ceil(total / limit) || 1,
+    };
   }
 
   async getAllOrdersByUserId(userId: string): Promise<ResponseOrderDto[]> {

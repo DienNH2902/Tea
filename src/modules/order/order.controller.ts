@@ -60,6 +60,22 @@ export class OrderController {
     return await this.orderService.create(userId, createOrderDto);
   }
 
+  // Trang admin "Quản lý đơn hàng" - lấy TOÀN BỘ đơn của MỌI khách hàng,
+  // có phân trang (khớp `PaginatedResult<T>` dùng chung toàn hệ thống).
+  @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleEnum.ADMIN, RoleEnum.MANAGER)
+  @ApiOperation({ summary: 'Admin/Manager get all orders (paginated)' })
+  async findAll(
+    @Query('pageNumber') pageNumber = 1,
+    @Query('pageSize') pageSize = 10,
+  ) {
+    return await this.orderService.findAllPaginated(
+      Number(pageNumber),
+      Number(pageSize),
+    );
+  }
+
   @Post('vnpay')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Tạo đơn hàng và link thanh toán VNPay' })
