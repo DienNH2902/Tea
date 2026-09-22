@@ -4,9 +4,11 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersRepository } from '../users/users.repository';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { plainToInstance } from 'class-transformer';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
+import { ResponseUserDto } from '../users/dto/response-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -65,10 +67,22 @@ export class AuthService {
 
     return {
       access_token: await this.jwtService.signAsync(payload),
-      // user: new ResponseUserDto(user),
-      // refresh_token: await this.jwtService.signAsync(payload, {
-      //   expiresIn: '7d',
-      // }),
+      // LỖI THỰC TẾ ĐÃ XẢY RA (khiến FE báo "response thiếu user" dù
+      // backend "báo thành công"): trước đây dùng `new ResponseUserDto(user)`
+      // - nhưng constructor của DTO đó tự gọi lại `plainToInstance(...)`,
+      // mà `plainToInstance` khi cần tạo instance MỚI lại tự `new
+      // ResponseUserDto()` (không tham số) để rồi gán field vào sau -
+      // việc này KÍCH HOẠT LẠI constructor, gọi lại `plainToInstance` với
+      // `partial = undefined` -> đệ quy hỏng, cuối cùng ra kết quả rỗng.
+      // Gọi thẳng `plainToInstance` ở NGOÀI (không qua `new`) - ĐÚNG y hệt
+      // cách `UsersService.toResponseDto()` đang làm (nơi KHÔNG bị lỗi
+      // này) - để tránh đệ quy.
+      user: plainToInstance(ResponseUserDto, user, {
+        excludeExtraneousValues: true,
+      }),
+      refresh_token: await this.jwtService.signAsync(payload, {
+        expiresIn: '7d',
+      }),
     };
   }
 }

@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Exclude, Expose, plainToInstance, Transform } from 'class-transformer';
-import { User } from '../schemas/user.schema';
+import { Exclude, Expose, Transform } from 'class-transformer';
 
 export class ResponseUserDto {
   @ApiProperty({ example: '507f1f77bcf86cd799439011' })
@@ -46,14 +45,21 @@ export class ResponseUserDto {
   @Exclude()
   __v: number;
 
-  // constructor(partial: Partial<User>) {
-  //   Object.assign(this, partial);
-  // }
-  constructor(partial: Partial<User>) {
-    // Thay vì Object.assign, hãy dùng plainToInstance
-    // Nó sẽ đọc các Decorator @Exclude, @Expose để lọc dữ liệu
-    return plainToInstance(ResponseUserDto, partial, {
-      excludeExtraneousValues: true, // Chỉ lấy những trường có @Expose()
-    });
-  }
+  // LỖI THỰC TẾ ĐÃ XẢY RA VÀ ĐÃ SỬA: trước đây constructor ở đây tự gọi
+  // `plainToInstance(ResponseUserDto, partial, {...})` NGAY BÊN TRONG
+  // chính constructor của class này. Vấn đề: `plainToInstance` khi cần
+  // tạo 1 instance MỚI của `ResponseUserDto` để gán field vào, nó tự gọi
+  // `new ResponseUserDto()` (KHÔNG tham số) - việc này lại kích hoạt LẠI
+  // constructor này, gọi lại `plainToInstance(...)` với `partial =
+  // undefined` -> ĐỆ QUY HỎNG, kết quả cuối cùng là 1 object rỗng/undefined
+  // dù không có exception nào ném ra rõ ràng (hậu quả: `AuthService.login()`
+  // từng dùng `new ResponseUserDto(user)` khiến field "user" trong response
+  // đăng nhập bị rỗng, phía frontend đọc `data.user.name` bị crash dù HTTP
+  // status vẫn 200/201 - "backend báo thành công nhưng thiếu dữ liệu").
+  //
+  // KHÔNG được tự override constructor để gọi `plainToInstance` như vậy -
+  // luôn gọi `plainToInstance(ResponseUserDto, ..., {excludeExtraneousValues:
+  // true})` từ BÊN NGOÀI class này (trong Service, xem
+  // `UsersService.toResponseDto()` hoặc `AuthService.login()`), KHÔNG BAO
+  // GIỜ dùng `new ResponseUserDto(...)` trực tiếp ở bất kỳ đâu.
 }
