@@ -61,7 +61,7 @@ export class OrdersGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const token =
         (client.handshake.auth?.token as string | undefined) ??
-        (client.handshake.headers?.authorization as string | undefined)?.replace(
+        (client.handshake.headers?.authorization as string)?.replace(
           'Bearer ',
           '',
         );
@@ -75,13 +75,18 @@ export class OrdersGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const payload = this.jwtService.verify<SocketJwtPayload>(token);
       void client.join(`user:${payload.sub}`);
 
-      if (payload.role === RoleEnum.ADMIN || payload.role === RoleEnum.MANAGER) {
+      if (
+        payload.role === RoleEnum.ADMIN ||
+        payload.role === RoleEnum.MANAGER
+      ) {
         void client.join('admin-orders');
       }
     } catch {
       // Token sai/hết hạn -> không join phòng nào, không ném lỗi làm sập
       // kết nối - client vẫn connect được nhưng sẽ không nhận sự kiện nào.
-      this.logger.warn(`Socket ${client.id} gửi token không hợp lệ khi connect`);
+      this.logger.warn(
+        `Socket ${client.id} gửi token không hợp lệ khi connect`,
+      );
     }
   }
 
@@ -95,6 +100,9 @@ export class OrdersGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * `OrdersService` ghi thành công xuống DB (tạo đơn mới hoặc đổi status).
    */
   emitOrderUpdated(order: ResponseOrderDto): void {
-    this.server.to(`user:${order.userId}`).to('admin-orders').emit('order:updated', order);
+    this.server
+      .to(`user:${order.userId}`)
+      .to('admin-orders')
+      .emit('order:updated', order);
   }
 }
