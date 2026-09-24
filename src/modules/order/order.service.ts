@@ -20,6 +20,7 @@ import { UsersService } from '../users/users.service';
 import { VnPayService } from '../payment/vnpay.service';
 import { OrderDocument } from './schemas/order.schema';
 import { PaginatedResult } from 'src/interface/pagination.interface';
+import { OrdersGateway } from './gateway/orders.gateway';
 
 interface VnPayCallbackResponse {
   success: boolean;
@@ -35,6 +36,7 @@ export class OrdersService {
     private readonly mailService: MailService,
     private readonly userService: UsersService,
     private readonly vnPayService: VnPayService,
+    private readonly ordersGateway: OrdersGateway,
   ) {}
 
   async create(
@@ -409,7 +411,9 @@ export class OrdersService {
       throw new NotFoundException('Cập nhật thất bại');
     }
 
-    return this.toResponseDto(updated);
+    const response = this.toResponseDto(updated);
+    this.ordersGateway.emitOrderUpdated(response);
+    return response;
   }
 
   // async updateOrder(

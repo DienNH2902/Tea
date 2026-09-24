@@ -9,6 +9,8 @@ import { TeaModule } from '../tea/tea.module';
 import { MailModule } from '../mail/mail.module';
 import { UsersModule } from '../users/users.module';
 import { PaymentModule } from '../payment/payment.module';
+import { AuthModule } from '../auth/auth.module';
+import { OrdersGateway } from './gateway/orders.gateway';
 
 @Module({
   imports: [
@@ -17,9 +19,10 @@ import { PaymentModule } from '../payment/payment.module';
     MailModule,
     UsersModule,
     PaymentModule,
+    AuthModule,
   ],
   controllers: [OrderController],
-  providers: [OrdersService, OrdersRepository],
+  providers: [OrdersService, OrdersRepository, OrdersGateway],
   exports: [OrdersService, OrdersRepository],
 })
 export class OrderModule {}

@@ -18,7 +18,16 @@ export class ResponseOrderDto {
 
   @ApiProperty({ example: '507f1f77bcf86cd799439011' })
   @Expose()
-  @Transform(({ obj }) => obj.userId?._id)
+  // LỖI THỰC TẾ ĐÃ XẢY RA (khiến khách hàng KHÔNG BAO GIỜ nhận được cập
+  // nhật realtime): trước đây chỉ đọc `obj.userId?._id`, giá trị này CHỈ
+  // đúng khi `userId` đã được `.populate()` từ MongoDB. Hàm
+  // `updateOrderStatusById()` (dùng khi admin đổi trạng thái đơn) KHÔNG hề
+  // populate - `userId` lúc đó vẫn là ObjectId THÔ (không có field `._id`
+  // con bên trong) -> `obj.userId?._id` ra `undefined` -> phòng WebSocket
+  // đích trở thành "user:undefined", không khớp phòng thật của khách hàng.
+  // Sửa để tự nhận diện CẢ 2 trường hợp: đã populate (object có `._id`)
+  // hoặc chưa populate (chính `userId` đã là ObjectId/string).
+  @Transform(({ obj }) => (obj.userId?._id ?? obj.userId)?.toString())
   userId: string;
 
   @ApiProperty({ example: 'Nguyễn Văn A' })

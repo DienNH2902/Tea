@@ -17,6 +17,15 @@ export class OrdersRepository {
     return newOrder.save();
   }
 
+  async findAllByUserId(userId: string): Promise<Order[]> {
+    return this.orderModel
+      .find({ userId: new Types.ObjectId(userId) })
+      .populate('userId')
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
+  }
+
   /**
    * Lấy TOÀN BỘ đơn hàng (mọi khách hàng), có phân trang - dùng cho trang
    * admin "Quản lý đơn hàng". Trước đây chưa tồn tại (chỉ có "đơn của
@@ -45,15 +54,6 @@ export class OrdersRepository {
     return { data, total };
   }
 
-  async findAllByUserId(userId: string): Promise<Order[]> {
-    return this.orderModel
-      .find({ userId: new Types.ObjectId(userId) })
-      .populate('userId')
-      .sort({ createdAt: -1 })
-      .lean()
-      .exec();
-  }
-
   async findOne(id: string): Promise<Order | null> {
     return this.orderModel.findById(id).lean().exec();
   }
@@ -75,6 +75,11 @@ export class OrdersRepository {
         { $set: { status: status } },
         { returnDocument: 'after' },
       )
+      // LỖI THỰC TẾ ĐÃ XẢY RA: thiếu dòng populate này khiến `userId` trả
+      // về vẫn là ObjectId thô -> `ResponseOrderDto.userName/userEmail/...`
+      // đều rỗng, và phòng WebSocket đích ở `OrdersGateway` bị sai (xem
+      // giải thích chi tiết trong `response-order.dto.ts`).
+      .populate('userId')
       .lean()
       .exec();
   }
@@ -104,6 +109,7 @@ export class OrdersRepository {
   ): Promise<Order | null> {
     return await this.orderModel
       .findByIdAndUpdate(id, updateData, { returnDocument: 'after' })
+      .populate('userId') // Đồng bộ với `updateOrderStatusById` - giữ đúng userName/userEmail trong response
       .lean()
       .exec();
   }
