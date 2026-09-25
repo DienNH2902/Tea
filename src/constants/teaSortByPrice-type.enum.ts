@@ -4,6 +4,6 @@ export enum SortTeaByPrice {
 }
 
 export const LabelToValue: Record<string, SortTeaByPrice> = {
-  'Tăng dần': SortTeaByPrice.ASCENDING,
-  'Giảm dần': SortTeaByPrice.DESCENDING,
+  'Giá tăng dần': SortTeaByPrice.ASCENDING,
+  'Gía giảm dần': SortTeaByPrice.DESCENDING,
 };
