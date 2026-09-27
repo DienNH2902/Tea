@@ -3,7 +3,7 @@ export enum SortTeaByPrice {
   DESCENDING = 'descending',
 }
 
-// Nhãn hiển thị
+// Nhãn hiển thị trên swagger
 export const LabelToValue: Record<string, SortTeaByPrice> = {
   'Giá tăng dần': SortTeaByPrice.ASCENDING,
   'Gía giảm dần': SortTeaByPrice.DESCENDING,
