@@ -1,5 +1,5 @@
 export enum OrderStatus {
-  PAID = 'Paid',
+  PAID = 'Paid', // Đã trả
   PENDING = 'Pending',
   PROCESSING = 'Processing',
   SHIPPED = 'Shipped',
